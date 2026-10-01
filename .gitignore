@@ -17,3 +17,4 @@ __pycache__/
 data/processed/**/*.csv
 data/processed/_corridas/
 data/processed/legislativo/camara/
+data/processed/legislativo/senado/

@@ -20,6 +20,9 @@ alias:
   UNIAO: UNIÃO
   MISSAO: MISSÃO
   SD: SOLIDARIEDADE
+  # Parlamentarios sin filiación (API del Senado)
+  S/Partido: SEM PARTIDO
+  S/PARTIDO: SEM PARTIDO
 
 # Linaje: qué sigla anterior continúa en cuál. Sirve para series históricas
 # (ej. comparar PRB 2018 con REPUBLICANOS 2022), NO para clasificar: la

@@ -24,3 +24,17 @@ camara:
     # no se mueve (intervalos engañosamente estrechos). Su desvío se toma del
     # cambio medio 2018->2022 de cada família (UNA sola observación: aproximación).
     componente_nacional: true
+
+senado:
+  # 2026 renueva 2/3: 54 bancas (2 por UF), mayoritario, cada elector vota 2 veces.
+  ano_base: 2022          # fuerza de família por UF = voto a Câmara de este año
+  ano_objetivo: 2026
+  bancas_mayoria: 41      # de 81
+  # Las 27 bancas que no se eligen: partido ACTUAL (API del Senado), decisión
+  # del 2026-10-01, clasificado con la tabla de ano_objetivo.
+  calibracion:
+    # beta = fracción de la fuerza de la família con la que compite su 2º
+    # candidato en la UF (dos votos por elector). Se calibra con 2018 (también
+    # renovó 2 bancas por UF), decisión del 2026-10-01.
+    ano: 2018
+    beta_grilla: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]

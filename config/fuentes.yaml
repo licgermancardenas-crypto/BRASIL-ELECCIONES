@@ -93,6 +93,8 @@ legislativo:
   senado_dados_abertos:
     base_url: "https://legis.senado.leg.br/dadosabertos"
     recursos: [senadores, votacoes, blocos, partidos]
+    # Senadores en ejercicio hoy, con partido actual y legislaturas del mandato
+    senadores_en_ejercicio: "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
 
 encuestadoras_referencia:
   # Para scraping/registro manual de series históricas publicadas en prensa

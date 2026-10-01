@@ -102,6 +102,10 @@ python -m src.etl.transform.gobernadores_por_uf --ano 2026
 #    ruido medido por família (parámetros en config/modelo.yaml). Cada corrida
 #    queda versionada en data/processed/legislativo/camara/<fecha>/ con meta.json.
 python -m src.models.montecarlo.proyeccion_bancas
+
+# 3b. Senado post-2026: 27 que siguen (partido actual, API del Senado) + 54 en
+#     juego por família. NO nombra ganadores; leer docs/modelo_senado.md.
+python -m src.models.montecarlo.proyeccion_senado
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

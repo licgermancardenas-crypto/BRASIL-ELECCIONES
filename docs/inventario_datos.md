@@ -1,6 +1,6 @@
 # Inventario de datos crudos
 
-Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:02. No editar a mano.
+Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:38. No editar a mano.
 
 `data/raw/` no se versiona en git (pesa GB): este archivo es el registro de qué versión de cada fuente se usó. Para reproducir, re-descargar y comparar sha256.
 
@@ -29,6 +29,9 @@ Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:02
 | resultados_partido | 2018 | 2026-10-01T051825Z | 27.9 | 29 | `c3ab9e78efd8` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_partido_munzona/votacao_partido_munzona_2018.zip |
 | resultados_partido | 2022 | 2026-10-01T051954Z | 25.2 | 29 | `60300ce06258` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_partido_munzona/votacao_partido_munzona_2022.zip |
 | resultados_partido | 2022 | 2026-10-01T070107Z | 25.1 | 29 | `626d9c1f4a5e` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_partido_munzona/votacao_partido_munzona_2022.zip |
+| senado_en_ejercicio | referencia | 2026-10-01T142728Z | 0.1 | 0 | `394614354d51` | https://legis.senado.leg.br/dadosabertos/senador/lista/atual |
 | tse_ibge_betafcc | referencia | 2026-10-01T065210Z | 0.2 | 0 | `723eae7e5ac5` | https://raw.githubusercontent.com/betafcc/Municipios-Brasileiros-TSE/master/municipios_brasileiros_tse.csv |
+| vagas | 2022 | 2026-10-01T140823Z | 0.2 | 29 | `9b357e4a0513` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2022.zip |
+| vagas | 2026 | 2026-10-01T140824Z | 0.2 | 29 | `872498ce5508` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2026.zip |
 
-**Total:** 24 archivos, 1.68 GB.
+**Total:** 27 archivos, 1.68 GB.

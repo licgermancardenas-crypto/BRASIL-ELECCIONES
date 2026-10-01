@@ -7,6 +7,7 @@ data/raw/referencia/<fuente>/<fecha_utc>/, versionadas con manifest.json.
 Fuentes (URLs en config/fuentes.yaml):
   ibge_municipios   -> IBGE Localidades API, lista oficial de municípios
   tse_ibge_betafcc  -> tabla comunitaria TSE↔IBGE (solo para validación)
+  senado_en_ejercicio -> Senado Federal, senadores en ejercicio con partido actual
 
 Uso:
     python -m src.etl.extract.referencia_extractor --fuente ibge_municipios tse_ibge_betafcc
@@ -54,6 +55,17 @@ def _validar_csv_betafcc(path: Path) -> dict:
     return {"registros": len(df)}
 
 
+def _validar_json_senado(path: Path) -> dict:
+    try:
+        datos = json.loads(path.read_text(encoding="utf-8"))
+        senadores = datos["ListaParlamentarEmExercicio"]["Parlamentares"]["Parlamentar"]
+    except (ValueError, KeyError) as e:
+        raise DescargaInvalida(f"respuesta del Senado con formato inesperado: {e}") from e
+    if len(senadores) != 81:
+        raise DescargaInvalida(f"{len(senadores)} senadores (se esperaban 81)")
+    return {"registros": len(senadores)}
+
+
 def _fuentes() -> dict[str, tuple[str, str, callable]]:
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -62,6 +74,8 @@ def _fuentes() -> dict[str, tuple[str, str, callable]]:
                             "municipios_ibge.json", _validar_json_municipios),
         "tse_ibge_betafcc": (cfg["referencia_comunitaria"]["tse_ibge_betafcc"]["url"],
                              "municipios_brasileiros_tse.csv", _validar_csv_betafcc),
+        "senado_en_ejercicio": (cfg["legislativo"]["senado_dados_abertos"]["senadores_en_ejercicio"],
+                                "senadores_en_ejercicio.json", _validar_json_senado),
     }
 
 
@@ -72,7 +86,8 @@ def ultima_version(fuente: str) -> Path:
 def descargar(fuente: str) -> Path | None:
     url, nombre, validar = _fuentes()[fuente]
     return descargar_versionado(url, RAW_DIR / fuente, nombre,
-                                meta={"dataset": fuente, "ano": "referencia"}, validar=validar)
+                                meta={"dataset": fuente, "ano": "referencia"}, validar=validar,
+                                headers={"Accept": "application/json"})
 
 
 def main() -> None:

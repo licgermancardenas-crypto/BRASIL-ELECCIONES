@@ -56,7 +56,9 @@ anos:
       direita_bolsonarista: [PL, PRTB]
       centro_liberal: [NOVO, PODE, CIDADANIA, PSDB, MISSÃO]
       esquerda_independente: [PCB, PCO, PSTU, UP]
-      sin_alineamiento: [DC, DEMOCRATA, MOBILIZA]
+      # SEM PARTIDO: parlamentarios sin filiación (ej. Romário, RJ, en la API del
+      # Senado al 2026-10-01). Agregado el 2026-10-01, revisable caso por caso.
+      sin_alineamiento: [DC, DEMOCRATA, MOBILIZA, SEM PARTIDO]
     # Cambios respecto de la versión original (scaffolding), con su evidencia:
     cambios:
       - "PDT agregado a gobierno_lula: integra la coligação presidencial de Lula 2026 (TSE)."

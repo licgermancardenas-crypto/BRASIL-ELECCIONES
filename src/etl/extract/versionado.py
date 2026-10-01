@@ -72,6 +72,7 @@ def descargar_versionado(
     validar: Callable[[Path], dict] | None = None,
     timeout: int = 120,
     forzar: bool = False,
+    headers: dict | None = None,
 ) -> Path | None:
     """Baja `url` a `base`. `validar(path)` devuelve metadata extra para el manifest.
     Con forzar=True se descarga aunque la cabecera remota no indique cambios."""
@@ -85,7 +86,7 @@ def descargar_versionado(
     tmp = base / f".{nombre}.part"
 
     log.info("Descargando %s", url)
-    with requests.get(url, stream=True, timeout=timeout) as resp:
+    with requests.get(url, stream=True, timeout=timeout, headers=headers) as resp:
         resp.raise_for_status()
         last_modified = resp.headers.get("Last-Modified")
         with open(tmp, "wb") as f:
