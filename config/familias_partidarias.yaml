@@ -47,8 +47,9 @@ familias:
 anos:
   2026:
     # Base: clasificación original del scaffolding + los cambios listados abajo.
-    # Pasa a `vigente` cuando Germán valide los cambios y los puntos a revisar.
-    estado: propuesta
+    # Validada por Germán el 2026-10-01, incluidos los puntos de `revisar`
+    # (se mantienen como están; quedan anotados para la revisión post-elección).
+    estado: vigente
     clasificacion:
       gobierno_lula: [PT, PC do B, PV, PSB, PSOL, REDE, AVANTE, PDT]
       centrao: [PP, REPUBLICANOS, UNIÃO, PSD, MDB, SOLIDARIEDADE, AGIR, PRD]

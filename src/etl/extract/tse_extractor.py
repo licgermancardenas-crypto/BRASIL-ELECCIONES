@@ -19,15 +19,13 @@ Uso:
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 import logging
 import zipfile
-from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 import yaml
+
+from src.etl.extract.versionado import DescargaInvalida, descargar_versionado, ultima_version_en
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -35,10 +33,6 @@ log = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = ROOT / "config" / "fuentes.yaml"
 RAW_DIR = ROOT / "data" / "raw" / "tse"
-
-
-class DescargaInvalida(Exception):
-    """El archivo bajado no pasa la validación de completitud."""
 
 
 def cargar_config() -> dict:
@@ -50,15 +44,7 @@ def datasets_disponibles() -> list[str]:
     return list(cargar_config()["tse"]["cdn"]["datasets"])
 
 
-def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for bloque in iter(lambda: f.read(1 << 20), b""):
-            h.update(bloque)
-    return h.hexdigest()
-
-
-def _validar_zip(path: Path) -> list[str]:
+def _validar_zip(path: Path) -> dict:
     if not zipfile.is_zipfile(path):
         raise DescargaInvalida(f"{path.name} no es un zip válido ({path.stat().st_size} bytes)")
     with zipfile.ZipFile(path) as z:
@@ -75,7 +61,7 @@ def _validar_zip(path: Path) -> list[str]:
                     break
         if not con_datos:
             raise DescargaInvalida(f"{path.name} solo trae encabezados, sin filas de datos")
-    return csvs
+    return {"archivos_internos": csvs}
 
 
 def carpeta_dataset(dataset: str, ano: int) -> Path:
@@ -85,75 +71,26 @@ def carpeta_dataset(dataset: str, ano: int) -> Path:
 
 def ultima_version(dataset: str, ano: int) -> Path:
     """Ruta al zip de la última descarga válida de (dataset, año)."""
-    base = carpeta_dataset(dataset, ano)
-    versiones = sorted(p for p in base.glob("*/manifest.json")) if base.exists() else []
-    if not versiones:
+    try:
+        return ultima_version_en(carpeta_dataset(dataset, ano))
+    except FileNotFoundError:
         raise FileNotFoundError(
-            f"No hay descargas de {dataset} {ano} en {base} — correr antes "
+            f"No hay descargas de {dataset} {ano} — correr antes "
             f"`python -m src.etl.extract.tse_extractor --dataset {dataset} --ano {ano}`"
-        )
-    manifest = json.loads(versiones[-1].read_text(encoding="utf-8"))
-    return versiones[-1].parent / manifest["archivo"]
+        ) from None
 
 
 def descargar_dataset(dataset: str, ano: int, timeout: int = 120) -> Path | None:
     cfg = cargar_config()["tse"]["cdn"]
     ruta = cfg["datasets"][dataset]["ruta"].format(ano=ano)
-    url = f"{cfg['base_url']}/{ruta}"
-    nombre = Path(ruta).name
-
-    base = carpeta_dataset(dataset, ano)
-    base.mkdir(parents=True, exist_ok=True)
-    tmp = base / f".{nombre}.part"
-
-    log.info("Descargando %s", url)
-    with requests.get(url, stream=True, timeout=timeout) as resp:
-        resp.raise_for_status()
-        last_modified = resp.headers.get("Last-Modified")
-        with open(tmp, "wb") as f:
-            for bloque in resp.iter_content(chunk_size=1 << 20):
-                f.write(bloque)
-
-    try:
-        csvs = _validar_zip(tmp)
-    except DescargaInvalida as e:
-        tmp.unlink()
-        log.error("Descarga descartada: %s", e)
-        return None
-
-    sha = _sha256(tmp)
-    try:
-        previo = ultima_version(dataset, ano)
-        if _sha256(previo) == sha:
-            tmp.unlink()
-            log.info("Sin cambios respecto de %s — no se duplica.", previo.parent.name)
-            return previo
-    except FileNotFoundError:
-        pass
-
-    ahora = datetime.now(timezone.utc)
-    version = ahora.strftime("%Y-%m-%dT%H%M%SZ")
-    destino_dir = base / version
-    destino_dir.mkdir()
-    destino = destino_dir / nombre
-    tmp.rename(destino)
-
-    manifest = {
-        "dataset": dataset,
-        "ano": ano,
-        "url": url,
-        "archivo": nombre,
-        "sha256": sha,
-        "bytes": destino.stat().st_size,
-        "descargado_utc": ahora.isoformat(timespec="seconds"),
-        "last_modified_fuente": last_modified,
-        "archivos_internos": csvs,
-    }
-    (destino_dir / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    return descargar_versionado(
+        url=f"{cfg['base_url']}/{ruta}",
+        base=carpeta_dataset(dataset, ano),
+        nombre=Path(ruta).name,
+        meta={"dataset": dataset, "ano": ano},
+        validar=_validar_zip,
+        timeout=timeout,
     )
-    log.info("Guardado en %s (%.1f MB, %d CSV)", destino, manifest["bytes"] / 1e6, len(csvs))
-    return destino
 
 
 def main() -> None:

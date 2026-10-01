@@ -65,11 +65,22 @@ ibge:
     setores_censitarios: "malha_de_setores_censitarios/censo_2022"
     municipios: "malha_municipal"
     epsg: 4674  # SIRGAS 2000
+  localidades_api:
+    # Lista oficial de municípios con código IBGE (7 dígitos) y jerarquía
+    # regional. Fuente primaria para la tabla de correspondencia TSE↔IBGE.
+    municipios: "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado"
   sidra_api:
     # API tabular del IBGE (censo, PIB municipal, população)
     base_url: "https://servicodados.ibge.gov.br/api/v3"
   atlas_desenvolvimento_humano:
     base_url: "http://www.atlasbrasil.org.br/acervo/atlas"
+
+referencia_comunitaria:
+  # Fuentes NO oficiales, usadas solo para validar cruces construidos por
+  # el proyecto — nunca como fuente única.
+  tse_ibge_betafcc:
+    url: "https://raw.githubusercontent.com/betafcc/Municipios-Brasileiros-TSE/master/municipios_brasileiros_tse.csv"
+    repo: "https://github.com/betafcc/Municipios-Brasileiros-TSE"
 
 legislativo:
   camara_dados_abertos:

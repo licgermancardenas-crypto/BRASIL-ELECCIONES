@@ -1,6 +1,6 @@
 # Inventario de datos crudos
 
-Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 02:30. No editar a mano.
+Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 03:54. No editar a mano.
 
 `data/raw/` no se versiona en git (pesa GB): este archivo es el registro de qué versión de cada fuente se usó. Para reproducir, re-descargar y comparar sha256.
 
@@ -17,9 +17,11 @@ Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 02:30
 | encuestas_registradas | 2018 | 2026-10-01T050036Z | 1.3 | 29 | `6c26a1510b5a` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2018.zip |
 | encuestas_registradas | 2022 | 2026-10-01T050037Z | 3.2 | 29 | `5565b63ced39` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2022.zip |
 | encuestas_registradas | 2026 | 2026-10-01T050040Z | 5.9 | 27 | `d965d166bb90` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2026.zip |
+| ibge_municipios | referencia | 2026-10-01T065209Z | 2.4 | 0 | `77bf68d9f5b1` | https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado |
 | resultados | 2018 | 2026-10-01T050930Z | 395.4 | 29 | `f880848ef4ba` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip |
 | resultados | 2022 | 2026-10-01T051735Z | 578.0 | 29 | `a53bfa7effb8` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip |
 | resultados_partido | 2018 | 2026-10-01T051825Z | 27.9 | 29 | `c3ab9e78efd8` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_partido_munzona/votacao_partido_munzona_2018.zip |
 | resultados_partido | 2022 | 2026-10-01T051954Z | 25.2 | 29 | `60300ce06258` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_partido_munzona/votacao_partido_munzona_2022.zip |
+| tse_ibge_betafcc | referencia | 2026-10-01T065210Z | 0.2 | 0 | `723eae7e5ac5` | https://raw.githubusercontent.com/betafcc/Municipios-Brasileiros-TSE/master/municipios_brasileiros_tse.csv |
 
-**Total:** 15 archivos, 1.06 GB.
+**Total:** 17 archivos, 1.06 GB.

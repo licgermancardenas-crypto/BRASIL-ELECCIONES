@@ -1,0 +1,36 @@
+{
+  "generado_utc": "2026-10-01T06:54:18+00:00",
+  "filas": 5570,
+  "por_metodo": {
+    "nombre_exacto": 5557,
+    "nombre_aproximado": 11,
+    "manual": 2
+  },
+  "discrepancias_comunitaria": [
+    "36765",
+    "36773",
+    "36790",
+    "36811",
+    "36820",
+    "81205",
+    "81507"
+  ],
+  "ibge_sin_tse": [
+    "5101837"
+  ],
+  "exterior": "excluido (UF ZZ, sin código IBGE)",
+  "fuentes": {
+    "tse_detalle_votacion": [
+      "data/raw/tse/detalle_votacion/2018/2026-10-01T050057Z/detalhe_votacao_munzona_2018.zip",
+      "data/raw/tse/detalle_votacion/2022/2026-10-01T050059Z/detalhe_votacao_munzona_2022.zip"
+    ],
+    "ibge_localidades": {
+      "archivo": "data/raw/referencia/ibge_municipios/2026-10-01T065209Z/municipios_ibge.json",
+      "sha256": "77bf68d9f5b1237522bcd28c39b8857725ebb25e913a5b13aa4a740ce67041b4"
+    },
+    "comunitaria_betafcc": {
+      "archivo": "data/raw/referencia/tse_ibge_betafcc/2026-10-01T065210Z/municipios_brasileiros_tse.csv",
+      "sha256": "723eae7e5ac570370137777e4de8e5679af2fe29a05dd0b4ff04235cca5b901a"
+    }
+  }
+}

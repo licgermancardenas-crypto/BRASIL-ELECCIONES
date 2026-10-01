@@ -75,10 +75,18 @@ pip install -r requirements.txt
 python -m src.etl.extract.tse_extractor --dataset resultados resultados_partido detalle_votacion --ano 2018 2022
 python -m src.etl.extract.tse_extractor --dataset encuestas_registradas candidatos coligaciones --ano 2018 2022 2026
 python -m src.etl.extract.ibge_geo_extractor --nivel setores_censitarios --ano 2022
+python -m src.etl.extract.referencia_extractor --fuente ibge_municipios tse_ibge_betafcc
 python -m src.etl.inventario   # regenera docs/inventario_datos.md
 
 # 1b. Fichas técnicas de encuestas (PesqEle) normalizadas 2018/2022/2026
 python -m src.etl.transform.encuestas_fichas
+
+# 1c. Tabla de correspondencia município TSE <-> IBGE (versionada en git:
+#     src/etl/transform/correspondencia/municipios_tse_ibge.csv)
+python -m src.etl.transform.correspondencia_municipios
+
+# 1d. Cobertura de la clasificación partido -> familia por año
+python -m src.models.bloques.resolver_familia --reporte
 
 # 2. Transform (normaliza, cruza con familias_partidarias.yaml)
 python -m src.etl.transform.run_pipeline

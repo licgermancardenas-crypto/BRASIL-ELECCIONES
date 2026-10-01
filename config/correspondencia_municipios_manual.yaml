@@ -1,0 +1,33 @@
+# config/correspondencia_municipios_manual.yaml
+# Correspondencias TSE -> IBGE que no se pueden resolver por nombre (ni
+# exacto ni aproximado). Cada entrada lleva su justificación. Se usa solo
+# como último recurso en src/etl/transform/correspondencia_municipios.py.
+
+manual:
+  - uf: RN
+    codigo_tse: "17035"
+    codigo_ibge: "2405306"
+    nombre_tse: "BOA SAÚDE"
+    nombre_ibge: "Januário Cicco"
+    motivo: >-
+      Mismo município con nombre distinto en cada registro: el IBGE usa
+      Januário Cicco y el TSE mantiene Boa Saúde. Coincide con la tabla
+      comunitaria (betafcc).
+
+  - uf: RR
+    codigo_tse: "03158"
+    codigo_ibge: "1400605"
+    nombre_tse: "SÃO LUIZ"
+    nombre_ibge: "São Luiz do Anauá"
+    motivo: >-
+      El TSE usa la forma corta del nombre; la similitud textual queda bajo
+      el umbral por el sufijo "do Anauá". Es el único São Luiz de RR y
+      coincide con la tabla comunitaria (betafcc).
+
+# Municípios IBGE sin código TSE conocido (todavía no votaron en una
+# elección general). Se listan para que su ausencia sea explícita.
+ibge_sin_tse:
+  - codigo_ibge: "5101837"
+    nombre_ibge: "Boa Esperança do Norte"
+    uf: MT
+    motivo: "Município de instalación reciente; no figura en los resultados TSE 2018/2022. Re-correr con datos 2026."
