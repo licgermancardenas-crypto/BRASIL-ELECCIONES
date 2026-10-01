@@ -98,7 +98,9 @@ python -m src.etl.transform.run_pipeline --permitir-propuesta   # solo exploraci
 #     es un balotaje independiente por estado, no uno nacional)
 python -m src.etl.transform.gobernadores_por_uf --ano 2026
 
-# 3. Modelado
+# 3. Modelado — Câmara 2026: base resultado 2022 en famílias/listas 2026 +
+#    ruido medido por família (parámetros en config/modelo.yaml). Cada corrida
+#    queda versionada en data/processed/legislativo/camara/<fecha>/ con meta.json.
 python -m src.models.montecarlo.proyeccion_bancas
 ```
 

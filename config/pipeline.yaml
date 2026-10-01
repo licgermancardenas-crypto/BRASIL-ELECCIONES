@@ -13,6 +13,7 @@ extraccion:
     - {dataset: detalle_votacion,   anos: [2018, 2022], anos_opcionales: [2026]}
     - {dataset: candidatos,         anos: [2018, 2022, 2026]}
     - {dataset: coligaciones,       anos: [2018, 2022, 2026]}
+    - {dataset: vagas,              anos: [2022, 2026]}
     # Encuestas fuera del pipeline por decisión del 2026-10-01 ("sin encuestas").
     # - {dataset: encuestas_registradas, anos: [2018, 2022, 2026]}
   referencia: [ibge_municipios, tse_ibge_betafcc]

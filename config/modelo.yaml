@@ -1,0 +1,26 @@
+# config/modelo.yaml
+# Parámetros de la simulación Montecarlo de bancas (src/models/montecarlo/).
+# Toda corrida guarda una copia de estos parámetros junto con sus resultados.
+
+simulacion:
+  n_simulaciones: 10000
+  random_seed: 42
+
+camara:
+  # Base: resultado 2022 llevado a partidos y famílias 2026 (decisión del
+  # 2026-10-01: "sin encuestas", base 2022 con famílias de hoy y ruido medido).
+  ano_base: 2022
+  ano_objetivo: 2026
+  # Reparto: Lei 14.211/2021 — solo compiten por bancas las listas (partido o
+  # federación) con votos >= 80% del cociente electoral. Si ninguna llega, todas.
+  umbral_cociente: 0.80
+
+  ruido:
+    # Desvío por família y UF = volatilidad medida (desvío entre UFs del cambio
+    # 2018->2022, composición fija), de volatilidad_familias.parquet.
+    fuente_volatilidad: fija_2026
+    # Shock nacional por família, común a todas las UF de una simulación.
+    # Sin él, los shocks por UF se compensan entre sí y el total nacional casi
+    # no se mueve (intervalos engañosamente estrechos). Su desvío se toma del
+    # cambio medio 2018->2022 de cada família (UNA sola observación: aproximación).
+    componente_nacional: true

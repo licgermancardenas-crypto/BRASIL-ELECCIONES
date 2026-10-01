@@ -27,6 +27,10 @@ tse:
       coligaciones:
         ruta: "consulta_coligacao/consulta_coligacao_{ano}.zip"
         carpeta: "coligaciones"
+      vagas:
+        # Bancas en disputa por cargo y UF (Câmara, Senado, asambleas)
+        ruta: "consulta_vagas/consulta_vagas_{ano}.zip"
+        carpeta: "vagas"
       padron:
         ruta: "perfil_eleitorado/perfil_eleitorado_{ano}.zip"
         carpeta: "padron"

@@ -16,3 +16,4 @@ __pycache__/
 .DS_Store
 data/processed/**/*.csv
 data/processed/_corridas/
+data/processed/legislativo/camara/
