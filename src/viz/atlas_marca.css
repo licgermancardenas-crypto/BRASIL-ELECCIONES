@@ -1,0 +1,77 @@
+/* Estilo de informes Atlas Analytics (A4 apaisado, impresión con Chrome).
+   Copia de ANALISIS/historico/scripts/41_informe_html.py (CSS), usado en los informes CABA de sep-2026. */
+@page { size: 29.7cm 21cm; margin: 0; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#1D1631; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width:29.7cm; height:21cm; padding:1.25cm 1.5cm 1.1cm; page-break-after:always; position:relative; overflow:hidden; background:#fff; }
+.page:last-child { page-break-after:auto; }
+.cab { border-bottom:2px solid #1D1631; padding-bottom:.32cm; margin-bottom:.42cm; }
+.kicker { font-size:7.5pt; letter-spacing:.14em; color:#5B3F99; font-weight:bold; }
+h2 { font-size:16.5pt; margin:.12cm 0 0; line-height:1.18; }
+.bajada { font-size:8.6pt; color:#6B6480; margin:.16cm 0 0; }
+.cuerpo { height:15.6cm; }
+.pie { position:absolute; left:1.5cm; right:1.5cm; bottom:.62cm; display:flex; justify-content:space-between;
+       font-size:6.8pt; color:#8A8983; border-top:1px solid #D9D2E6; padding-top:.16cm; }
+.marca { color:#5B3F99; }
+.folio::after { counter-increment: page; content: counter(page); }
+body { counter-reset: page 0; }
+table { width:100%; border-collapse:collapse; font-size:8pt; margin:.1cm 0 .2cm; }
+.fig-chica { max-height:6.6cm; margin-top:.25cm; }
+.fig-lado { max-height:12.6cm; margin-top:-.2cm; }
+th { background:#1D1631; color:#fff; text-align:left; padding:.14cm .18cm; font-size:7pt; font-weight:bold; vertical-align:bottom; }
+td { padding:.115cm .18cm; border-bottom:1px solid #EDEAF3; }
+tr:nth-child(even) td { background:#FAF8FD; }
+td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+.fig { width:100%; display:block; margin:0 auto .16cm; max-height:9.4cm; object-fit:contain; }
+.fig-mapa { max-height:12.6cm; }
+.insight { border-left:3px solid #5B3F99; background:#F7F4FB; padding:.22cm .3cm; font-size:8.4pt; margin:.16cm 0; line-height:1.34; }
+.fuente { font-size:6.8pt; color:#8A8983; margin:.1cm 0 0; }
+.dos-col { display:flex; gap:.7cm; }
+.dos-col > * { flex:1; }
+.dos-col-60 > *:first-child { flex:1.5; }
+.dos-col-55 > *:first-child { flex:1.25; }
+.kpis { display:flex; gap:.45cm; margin-bottom:.5cm; }
+.kpi { flex:1; border-top:3px solid #5B3F99; padding:.24cm .2cm; background:#FAF8FD; }
+.kpi-v { font-size:20pt; font-weight:bold; line-height:1; }
+.kpi-l { font-size:8pt; font-weight:bold; margin-top:.12cm; }
+.kpi-n { font-size:7pt; color:#6B6480; margin-top:.06cm; }
+.tesis { display:grid; grid-template-columns:1fr 1fr; gap:.42cm .8cm; }
+.t, .reco { display:flex; gap:.34cm; }
+.t-n, .r-n { font-size:15pt; font-weight:bold; color:#C9BEE4; line-height:1; }
+.t h3, .reco h3 { font-size:9.6pt; margin:0 0 .1cm; }
+.t p, .reco p { font-size:8.2pt; margin:0; color:#3A3350; line-height:1.36; }
+.recos { display:grid; grid-template-columns:1fr 1fr; gap:.55cm .9cm; }
+.chip { display:inline-block; padding:.03cm .18cm; border-radius:.3cm; color:#fff; font-size:6.8pt; font-weight:bold; }
+.r { display:inline-block; min-width:1.05cm; text-align:right; padding:.02cm .12cm; border-radius:.08cm; font-variant-numeric:tabular-nums; }
+.rp { background:#2A78D6; color:#fff; } .rn { background:#E34948; color:#fff; }
+.idx { display:flex; gap:.35cm; align-items:flex-start; margin-bottom:.5cm; font-size:9pt; }
+.idx span { font-size:13pt; font-weight:bold; color:#5B3F99; }
+.idx i { color:#6B6480; font-style:normal; font-size:8.2pt; }
+.nota-metodo h3 { font-size:9pt; margin:.3cm 0 .12cm; color:#5B3F99; }
+.nota-metodo p { font-size:8.1pt; margin:0 0 .18cm; line-height:1.38; color:#3A3350; }
+.divisor { background:#1D1631; color:#fff; display:flex; align-items:center; padding-left:3cm; }
+.divisor .d-n { font-size:52pt; font-weight:bold; color:#5B3F99; line-height:1; }
+.divisor h2 { font-size:26pt; margin:.2cm 0 .2cm; }
+.divisor p { font-size:11pt; color:#C9BEE4; margin:0; max-width:17cm; }
+.portada { padding:0; display:flex; }
+.p-izq { flex:1.32; background:#1D1631; color:#fff; padding:2.1cm 1.8cm 1.4cm; display:flex; flex-direction:column; }
+.p-der { flex:1; overflow:hidden; }
+.p-der img { width:100%; height:100%; object-fit:cover; object-position:center; }
+.p-marca { font-size:9pt; letter-spacing:.3em; color:#C40BFF; font-weight:bold; }
+
+.mapa-wrap { display:flex; gap:.6cm; height:100%; }
+.mapa-wrap .fig-mapa { flex:2.3; max-height:13.6cm; width:auto; margin:0; }
+.mapa-lado { flex:1; padding-top:.2cm; }
+.lat { font-size:8.3pt; color:#3A3350; line-height:1.4; margin:.3cm 0 0; }
+.banda { margin-top:.5cm; border-top:2px solid #1D1631; padding-top:.3cm; }
+.banda-t { font-size:8pt; font-weight:bold; color:#5B3F99; letter-spacing:.08em; margin-bottom:.22cm; }
+.banda-g { display:flex; gap:.8cm; }
+.banda-g > div { flex:1; display:flex; gap:.28cm; align-items:baseline; }
+.banda-g b { font-size:15pt; }
+.banda-g span { font-size:7.6pt; color:#6B6480; line-height:1.3; }
+.portada h1 { font-size:34pt; line-height:1.08; margin:1.5cm 0 .5cm; }
+.p-sub { font-size:11.5pt; color:#C9BEE4; line-height:1.4; max-width:13.5cm; }
+.p-linea { width:3.2cm; height:3px; background:#C40BFF; margin:.9cm 0; }
+.p-meta { font-size:8.4pt; color:#C9BEE4; line-height:1.6; }
+.p-meta span { color:#8A7FB0; display:inline-block; width:2.1cm; }
+.p-conf { margin-top:auto; font-size:7.6pt; color:#8A7FB0; letter-spacing:.08em; }

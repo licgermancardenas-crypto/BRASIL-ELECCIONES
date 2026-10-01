@@ -1,5 +1,7 @@
 # Brief ATLAS Brasil 2026 — previo a la 1ª vuelta
 
+> Versión para cliente en PDF: `ATLAS_Brasil_Brief_1a_Vuelta_2026-10-01.pdf` (genera `python -m src.viz.brief_pdf`).
+
 **Fecha de corte:** 1/10/2026 (encuestas con campo hasta el 29/9) · **Elección:** 4/10 · **Balotajes:** 25/10
 
 ## Mensajes clave
@@ -18,7 +20,8 @@
    número.
 4. **La tendencia favorece a Flávio.** La brecha de 1ª vuelta bajó de ~6 pp a
    mediados de septiembre a 2,6 pp hoy.
-5. **Gobernadores:** el Centrão es favorito en 19 de las 27 UF (rango 16–22).
+5. **Gobernadores:** el Centrão es favorito en 22 de las 27 UF y en la
+   simulación gana entre 16 y 22 gobernaciones (mediana 19).
    Se esperan ~6 balotajes estaduales el 25/10. Este modelo **no usa
    encuestas**: es estructural, sobre la base 2022.
 6. **Congreso:** el Centrão sigue siendo el bloque pivote. Tiene ~240

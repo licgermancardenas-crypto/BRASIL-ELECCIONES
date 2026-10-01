@@ -37,23 +37,34 @@ SERIES = {"lula": ("Lula (PT)", "#2a78d6"), "flavio_bolsonaro": ("Flávio Bolson
 SUPERFICIE, TEXTO, TEXTO_2, GRILLA = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 
 
+def corte_por_defecto() -> date:
+    ano = cargar_config()["encuestas"]["ano_objetivo"]
+    return min(date.today(), fechas_eleccion(ano)[1] - timedelta(days=1))
+
+
+def calcular(corte: date) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """(meta y % válidos de cada encuesta de 1ª vuelta hasta `corte`, agregado día por día)."""
+    cfg = cargar_config()["encuestas"]
+    largo = pd.read_parquet(ENCUESTAS)
+    errs = pd.concat([errores_finales(largo, a, cfg["ventana_final_dias"]) for a in cfg["anos_historicos"]])
+    tr, _ = track_record(errs, cfg["shrink_track_record"])
+    pesos = dict(zip(tr["casa"], tr["peso_calidad"]))
+    meta, val = a_validos(escenario_principal(largo, cfg["ano_objetivo"], 1))
+    dentro = meta["fecha_fin"].dt.date <= corte
+    meta, val = meta[dentro], val[dentro]
+    dias = pd.date_range(meta["fecha_fin"].min() + pd.Timedelta(days=7), pd.Timestamp(corte))
+    tendencia = pd.DataFrame([agregar(meta, val, d.date(), pesos, cfg)["estimacion"] for d in dias], index=dias)
+    return meta, val, tendencia
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--corte", type=date.fromisoformat)
     args = parser.parse_args(argv)
 
-    cfg = cargar_config()["encuestas"]
-    ano = cfg["ano_objetivo"]
-    corte = args.corte or min(date.today(), fechas_eleccion(ano)[1] - timedelta(days=1))
-    largo = pd.read_parquet(ENCUESTAS)
-    errs = pd.concat([errores_finales(largo, a, cfg["ventana_final_dias"]) for a in cfg["anos_historicos"]])
-    tr, _ = track_record(errs, cfg["shrink_track_record"])
-    pesos = dict(zip(tr["casa"], tr["peso_calidad"]))
+    corte = args.corte or corte_por_defecto()
+    meta, val, tendencia = calcular(corte)
 
-    meta, val = a_validos(escenario_principal(largo, ano, 1))
-    meta, val = meta[meta["fecha_fin"].dt.date <= corte], val[meta["fecha_fin"].dt.date <= corte]
-    dias = pd.date_range(meta["fecha_fin"].min() + pd.Timedelta(days=7), pd.Timestamp(corte))
-    tendencia = pd.DataFrame([agregar(meta, val, d.date(), pesos, cfg)["estimacion"] for d in dias], index=dias)
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10})
     fig, ax = plt.subplots(figsize=(9, 5.2), facecolor=SUPERFICIE)
