@@ -1,0 +1,56 @@
+# config/partidos.yaml
+# Identidad de partidos a través del tiempo. Se separa de
+# familias_partidarias.yaml a propósito: acá van HECHOS registrales
+# (cambios de nombre, fusiones, incorporaciones); allá va la CLASIFICACIÓN
+# política, que es una decisión analítica.
+#
+# Por qué hace falta (verificado contra consulta_cand del TSE 2018/2022/2026):
+#  - El número de partido NO es estable: el 14 era PTB y en 2026 es MISSÃO;
+#    el 20 era PSC y en 2026 es PODE; el 25 era DEM y en 2026 es PRD; el 44
+#    era PRP y desde 2022 es UNIÃO.
+#  - La misma sigla se escribe distinto según archivo/año (PATRI vs PATRIOTA
+#    en 2018; PC do B vs PCDOB en 2026).
+# Regla: la clave es siempre (sigla normalizada, año de elección).
+
+# Variantes de escritura -> sigla canónica (la que se usa en familias_partidarias.yaml)
+alias:
+  PATRI: PATRIOTA
+  PCDOB: PC do B
+  PCdoB: PC do B
+  UNIAO: UNIÃO
+  MISSAO: MISSÃO
+  SD: SOLIDARIEDADE
+
+# Linaje: qué sigla anterior continúa en cuál. Sirve para series históricas
+# (ej. comparar PRB 2018 con REPUBLICANOS 2022), NO para clasificar: la
+# família se resuelve siempre con la sigla vigente en ese año.
+linaje:
+  - {de: PRB, a: REPUBLICANOS, desde: 2019, tipo: cambio_nombre}
+  - {de: PR, a: PL, desde: 2019, tipo: cambio_nombre}
+  - {de: PPS, a: CIDADANIA, desde: 2019, tipo: cambio_nombre}
+  - {de: PTC, a: AGIR, desde: 2022, tipo: cambio_nombre}
+  - {de: PMN, a: MOBILIZA, desde: 2024, tipo: cambio_nombre}
+  - {de: PMB, a: DEMOCRATA, desde: 2025, tipo: cambio_nombre}
+  - {de: DEM, a: UNIÃO, desde: 2022, tipo: fusion}
+  - {de: PSL, a: UNIÃO, desde: 2022, tipo: fusion}
+  - {de: PHS, a: PODE, desde: 2019, tipo: incorporacion}
+  - {de: PRP, a: PATRIOTA, desde: 2019, tipo: incorporacion}
+  - {de: PPL, a: PC do B, desde: 2019, tipo: incorporacion}
+  - {de: PROS, a: SOLIDARIEDADE, desde: 2023, tipo: incorporacion}
+  - {de: PSC, a: PODE, desde: 2023, tipo: incorporacion}
+  - {de: PTB, a: PRD, desde: 2023, tipo: fusion}
+  - {de: PATRIOTA, a: PRD, desde: 2023, tipo: fusion}
+
+# Federaciones (art. 11-A Lei 9.096): actúan como un solo partido en la
+# elección proporcional y duran al menos 4 años. Fuente: consulta_cand TSE.
+federaciones:
+  2022:
+    FE BRASIL: [PT, PC do B, PV]
+    PSOL REDE: [PSOL, REDE]
+    PSDB CIDADANIA: [PSDB, CIDADANIA]
+  2026:
+    FE BRASIL: [PT, PC do B, PV]
+    PSOL REDE: [PSOL, REDE]
+    PSDB CIDADANIA: [PSDB, CIDADANIA]
+    UNIAO PROGRESSISTA: [UNIÃO, PP]
+    PRD SOLIDARIEDADE: [PRD, SOLIDARIEDADE]

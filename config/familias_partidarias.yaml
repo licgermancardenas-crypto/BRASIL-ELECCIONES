@@ -3,41 +3,103 @@
 # bloques y modelar coaliciones (misma lógica que config/familias.yaml
 # en atlas-congreso-2027, adaptada al multipartidismo brasileño).
 #
-# NOTA METODOLÓGICA: a diferencia de Argentina, Brasil tiene ~30 partidos
-# con representación parlamentaria y alta fluidez de bancada (troca-troca
-# partidário). Cada entrada tiene un campo `estable` para marcar partidos
-# con historial de fidelidad de bloque vs. los que rotan de alianza según
-# la elección.
+# NOTA METODOLÓGICA: Brasil tiene ~30 partidos con alta fluidez de bancada
+# (troca-troca partidário). La familia de un partido NUNCA es fija: se
+# clasifica POR AÑO DE ELECCIÓN y se resuelve siempre por (sigla, año) con
+# src/models/bloques/resolver_familia.py. Las siglas son las canónicas de
+# config/partidos.yaml (alias y linaje de fusiones/cambios de nombre).
+#
+# Las claves de familia son estables entre años para poder comparar series;
+# lo que cambia es qué partidos contiene cada una. Ojo con `gobierno_lula`:
+# en 2018 Lula no gobernaba — ahí significa "campo PT/Lula" (oposición).
+#
+# Estados por año:
+#   vigente   -> validada por Germán, se usa en producción
+#   propuesta -> armada a partir de evidencia del TSE (coalición presidencial
+#                y federaciones), PENDIENTE de validación. El resolver la
+#                rechaza salvo que se pida explícitamente.
+#
+# Evidencia por año: consulta_coligacao / consulta_cand (TSE), primera vuelta
+# presidencial. Ver docs/familias_evidencia.md (generado).
 
 familias:
   gobierno_lula:
     nombre: "Base de gobierno (Lula / PT y aliados)"
-    partidos: [PT, PCdoB, PV, PSB, PSOL, REDE, AVANTE]
-    estable: false  # PSB y AVANTE rotan según la elección
-
+    estable: false
   centrao:
     nombre: "Centrão (bloque fisiológico/negociador)"
-    partidos: [PP, REPUBLICANOS, UNIAO, PSD, MDB, SOLIDARIEDADE, AGIR]
     estable: true  # vota con quien gobierna, históricamente
-
   direita_bolsonarista:
     nombre: "Derecha bolsonarista"
-    partidos: [PL, PRTB, PATRIOTA]
     estable: true
-
   centro_liberal:
     nombre: "Centro / centro-liberal"
-    partidos: [NOVO, PODEMOS, CIDADANIA, PSDB]
     estable: false
-
   esquerda_independente:
     nombre: "Izquierda fuera de la base de gobierno"
-    partidos: [PSOL]  # cuando no integra base_lula en esa legislatura
     estable: false
+  sin_alineamiento:
+    # Partidos chicos sin alineamiento nacional consistente. Se declaran
+    # explícitamente acá para que ningún voto quede asignado "por defecto".
+    nombre: "Sin alineamiento nacional (partidos menores)"
+    estable: false
+
+anos:
+  2026:
+    # Base: clasificación original del scaffolding + los cambios listados abajo.
+    # Pasa a `vigente` cuando Germán valide los cambios y los puntos a revisar.
+    estado: propuesta
+    clasificacion:
+      gobierno_lula: [PT, PC do B, PV, PSB, PSOL, REDE, AVANTE, PDT]
+      centrao: [PP, REPUBLICANOS, UNIÃO, PSD, MDB, SOLIDARIEDADE, AGIR, PRD]
+      direita_bolsonarista: [PL, PRTB]
+      centro_liberal: [NOVO, PODE, CIDADANIA, PSDB, MISSÃO]
+      esquerda_independente: [PCB, PCO, PSTU, UP]
+      sin_alineamiento: [DC, DEMOCRATA, MOBILIZA]
+    # Cambios respecto de la versión original (scaffolding), con su evidencia:
+    cambios:
+      - "PDT agregado a gobierno_lula: integra la coligação presidencial de Lula 2026 (TSE)."
+      - "PSOL sacado de esquerda_independente: estaba en dos familias a la vez; integra la coligação de Lula 2026."
+      - "PATRIOTA sacado: ya no existe (fusión con PTB -> PRD, 2023)."
+      - "PRD agregado a centrao: federado con SOLIDARIEDADE (TSE 2026)."
+      - "PCB, PCO, PSTU, UP agregados a esquerda_independente: candidatos propios, fuera de la coligação de Lula."
+      - "MISSÃO agregado a centro_liberal: PROPUESTO, partido nuevo (2025) sin historial; revisar."
+      - "DC, DEMOCRATA (ex-PMB), MOBILIZA (ex-PMN) en sin_alineamiento."
+    revisar:
+      - "AVANTE: en gobierno_lula según versión original, pero en 2026 lanza candidato propio (Augusto Cury) coligado con AGIR, que está en centrao."
+      - "PRTB: en direita_bolsonarista según versión original, pero en 2026 compite contra Flávio Bolsonaro (PL) con candidato propio."
+      - "PSD: en centrao, pero en 2026 lleva candidato presidencial propio (Ronaldo Caiado)."
+
+  2022:
+    estado: propuesta
+    clasificacion:
+      # coligação Lula 1ª vuelta: FE BRASIL (PT/PCdoB/PV), PSOL REDE, PSB, SOLIDARIEDADE, AGIR, AVANTE, PROS
+      gobierno_lula: [PT, PC do B, PV, PSOL, REDE, PSB, SOLIDARIEDADE, AVANTE, AGIR, PROS]
+      # coligação Bolsonaro: PL, PP, REPUBLICANOS — PP y REPUBLICANOS quedan en centrao por naturaleza de bloque
+      centrao: [PP, REPUBLICANOS, UNIÃO, PSD, MDB, PSC]
+      direita_bolsonarista: [PL, PRTB, PTB, PATRIOTA]
+      # coligação Tebet: MDB, PSDB/CIDADANIA, PODE
+      centro_liberal: [PSDB, CIDADANIA, PODE, NOVO]
+      esquerda_independente: [PDT, PCB, PSTU, PCO, UP]
+      sin_alineamiento: [DC, PMN, PMB]
+
+  2018:
+    estado: propuesta
+    clasificacion:
+      # coligação Haddad: PT, PCdoB, PROS. PSB neutral formal en 1ª vuelta (acuerdo con PT).
+      gobierno_lula: [PT, PC do B, PROS, PSB]
+      # coligação Alckmin ("centrão" formal): PSDB, PTB, PP, PR, DEM, SD, PPS, PRB, PSD
+      centrao: [PP, PR, PRB, DEM, SOLIDARIEDADE, PSD, PTB, MDB, PSC, PHS, PRP, PTC, AVANTE, PATRIOTA]
+      # coligação Bolsonaro: PSL, PRTB
+      direita_bolsonarista: [PSL, PRTB]
+      centro_liberal: [PSDB, PPS, NOVO, PODE, REDE, PV]
+      # Ciro (PDT), Boulos (PSOL/PCB), PSTU, PCO, PPL
+      esquerda_independente: [PDT, PSOL, PCB, PSTU, PCO, PPL]
+      sin_alineamiento: [DC, PMN, PMB]
 
 reglas_clasificacion:
   # Un partido puede migrar de familia entre legislaturas — nunca hardcodear
   # la familia en el dataset de resultados; resolver siempre por año + sigla
   # contra este archivo en tiempo de ETL.
-  fuente_verificacion: "TSE — Filiação Partidária / Dados Abertos da Câmara (bloco parlamentar vigente)"
+  fuente_verificacion: "TSE — consulta_coligacao / consulta_cand (coligação presidencial y federaciones); Dados Abertos da Câmara (bloco parlamentar vigente)"
   frecuencia_revision: "cada inicio de legislatura (fev/2027) y tras migraciones relevantes"
