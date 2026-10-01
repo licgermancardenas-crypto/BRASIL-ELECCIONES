@@ -27,3 +27,18 @@ def test_vectorizado_suma_dos_por_simulacion():
     rng = np.random.default_rng(0)
     r = ganadores(rng.random((300, 6)), np.array([3, 2, 1, 1, 0, 2]), beta=0.6)
     assert (r.sum(axis=1) == 2).all()
+
+
+def test_efecto_candidato_cero_no_cambia_nada():
+    f, n = np.array([[0.5, 0.3, 0.2]]), np.array([2, 1, 1])
+    sin = ganadores(f, n, beta=0.5)
+    con = ganadores(f, n, beta=0.5, efecto_candidato=np.zeros((1, 6)))
+    assert (sin == con).all()
+
+
+def test_efecto_candidato_es_multiplicativo():
+    # Un partido de 0,5% necesita un efecto enorme para superar a uno de 30%:
+    # con efecto log de +2 (×7,4) llega a 3,7% y sigue perdiendo.
+    f, n = np.array([[0.40, 0.30, 0.005]]), np.array([1, 1, 1])
+    efecto = np.array([[0.0, 0.0, 2.0, 0.0, 0.0, 0.0]])
+    assert ganadores(f, n, beta=0.1, efecto_candidato=efecto).tolist() == [[1, 1, 0]]

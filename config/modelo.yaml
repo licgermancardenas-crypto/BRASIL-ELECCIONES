@@ -38,3 +38,11 @@ senado:
     # renovó 2 bancas por UF), decisión del 2026-10-01.
     ano: 2018
     beta_grilla: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  efecto_candidato:
+    # Error del modelo con la fuerza de família conocida = shock propio de cada
+    # candidatura, MULTIPLICATIVO: fuerza × exp(N(0, sigma)). sigma se elige por
+    # máxima verosimilitud de los ganadores 2018 (decisión del 2026-10-01:
+    # "sumar el error de 2018 al ruido"). sigma 0.7 ≈ el candidato puede
+    # duplicar o reducir a la mitad la fuerza de su família (±1 desvío).
+    grilla_log: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0, 3.0]
+    n_sim_calibracion: 4000

@@ -2,15 +2,16 @@
 
 Código: `src/models/montecarlo/proyeccion_senado.py`. Parámetros:
 `config/modelo.yaml` (sección `senado`). Cada corrida queda en
-`data/processed/legislativo/senado/<fecha_utc>/` con `meta.json`.
+`data/processed/legislativo/senado/<fecha_utc>/` con `meta.json`,
+`calibracion.csv` y `calibracion_efecto_candidato.csv`.
 
 ## Leer antes de usar
 
 **El Senado se decide por candidato y este modelo no ve candidatos, solo
 famílias.** Sin encuestas (decisión del 2026-10-01) estima cuántas bancas
-tiene chance cada família por UF; **no nombra ganadores**. Su error medido en
-2018 es grande (ver Validación) y los rangos p10–p90 **no lo incluyen**:
-reflejan solo el ruido de famílias, no el error del modelo.
+tiene chance cada família por UF; **no nombra ganadores**. El error que tuvo
+en 2018 está incorporado a los rangos como "efecto candidato" (ver abajo),
+pero queda un sesgo por família que el ruido no corrige.
 
 ## Composición
 
@@ -24,20 +25,27 @@ reflejan solo el ruido de famílias, no el error del modelo.
 ## Regla por UF
 
 1. Fuerza de cada família = % de voto a Câmara 2022 en la UF (famílias 2026),
-   más el mismo ruido que el modelo de Câmara (shock nacional + shock por UF).
+   más los shocks de família del modelo de Câmara (nacional + por UF): cuánto
+   puede cambiar la fuerza de una família entre elecciones.
 2. Una família sin candidatos en la UF no puede ganar. Con 1 candidato
    compite con su fuerza; con 2 o más, su segundo candidato compite con
    β × fuerza (cada elector vota dos veces).
-3. Ganan las 2 entradas más fuertes.
+3. **Efecto candidato:** la fuerza de cada candidatura se multiplica por
+   exp(N(0, σ)). Es el error del modelo aun conociendo la fuerza de la família.
+4. Ganan las 2 entradas más fuertes.
 
 Candidatos 2026: `consulta_cand` del TSE, sin duplicados por UF y número.
 El TSE no publica todavía la situación de candidatura: incluye impugnadas.
 
-## Calibración y validación con 2018
+## Calibración con 2018
 
 2018 también renovó 2 bancas por UF. Se reprodujo con la fuerza de Câmara
-**del mismo 2018** y la clasificación 2018. Criterio: menor error en el total
-nacional por família (es lo que el modelo reporta).
+**del mismo 2018** y la clasificación 2018 (decisión del 2026-10-01).
+
+### β (segundo candidato de una família)
+
+Criterio: menor error en el total nacional por família (es lo que el modelo
+reporta).
 
 | Regla | Error total por família (de 53) | Aciertos UF×família |
 |---|---:|---:|
@@ -46,29 +54,48 @@ nacional por família (es lo que el modelo reporta).
 | Ingenua (2 famílias más fuertes) | 19 | 28 |
 
 β ≤ 0,2 equivale a "una banca por família por UF". Con β = 0,5 se acertaban
-más UF, pero le daba 43 bancas al centrão contra 29 reales: por eso el
-criterio es el error en el total.
+más UF, pero le daba 43 bancas al centrão contra 29 reales.
 
-**Sesgo observado:** en 2018 el modelo le dio 14 bancas al campo PT contra 7
-reales (ola anti-PT de ese año). Y eso con el voto a Câmara del mismo año;
-para 2026 se usa el de 2022, así que el error esperado es mayor.
+### σ (efecto candidato), decisión del 2026-10-01: "sumar el error de 2018 al ruido"
+
+Máxima verosimilitud de los ganadores reales 2018 por UF y família (52 UF×bancas;
+MT excluido). Óptimo interior: **σ = 2,0** (log-verosimilitud −57,1; con
+σ = 3,0 empeora a −58,4).
+
+- **Por qué multiplicativo:** con un shock aditivo igual para todos (primer
+  intento), la verosimilitud crecía sin tope y partidos de 0,5% (PCB, PCO,
+  PSTU, UP) ganaban 3,6 bancas en promedio. Multiplicativo, un candidato
+  puede potenciar o hundir a su família, pero un partido marginal no salta
+  a competitivo.
+- **Qué significa σ = 2:** un candidato puede multiplicar o dividir por ~7 la
+  fuerza de su família (±1 desvío). En 2018 la fuerza de família explicó poco
+  de quién ganó el Senado: decidieron los candidatos.
+- **Sesgo que queda:** aun con σ óptimo, el total real 2018 del centrão cae
+  en el percentil 1,00 de lo simulado (el modelo lo subestima) y el del
+  campo PT en el 0,09 (lo sobreestima). No se corrige: sería ajustar a una
+  sola elección.
 
 53 bancas y no 54: en MT la segunda electa (Selma Arruda, PSL) fue casada y
 sus votos anulados.
 
-## Resultado (corrida 2026-10-01, 10.000 simulaciones, semilla 42, β = 0,1)
+## Resultado (corrida 2026-10-01, 10.000 simulaciones, semilla 42, β = 0,1, σ = 2,0)
 
 | Família | Siguen | En juego (media) | Total p10 | Mediana | p90 | Prob. mayoría propia (≥41) |
 |---|---:|---:|---:|---:|---:|---:|
-| centrao | 13 | 27,1 | 38 | 40 | 41 | 40% |
-| gobierno_lula | 4 | 16,7 | 15 | 21 | 26 | 0% |
-| direita_bolsonarista | 9 | 6,2 | 10 | 14 | 22 | 0% |
-| centro_liberal | 0 | 4,0 | 1 | 3 | 8 | 0% |
-| sin_alineamiento | 1 | 0 | 1 | 1 | 1 | 0% |
+| centrao | 13 | 22,4 | 32 | 35 | 39 | 5% |
+| gobierno_lula | 4 | 15,0 | 15 | 19 | 23 | 0% |
+| direita_bolsonarista | 9 | 8,3 | 13 | 17 | 22 | 0% |
+| centro_liberal | 0 | 7,0 | 4 | 7 | 11 | 0% |
+| sin_alineamiento | 1 | 1,0 | 1 | 2 | 4 | 0% |
+| esquerda_independente | 0 | 0,2 | 0 | 0 | 1 | 0% |
+
+Sin efecto candidato (versión anterior) el centrão tenía mediana 40 y 40% de
+probabilidad de mayoría propia: esa confianza no estaba justificada.
 
 ## Limitaciones
 
-- Sin voto personal de candidatos: el factor decisivo del Senado no está.
-- Error de validación 2018 de 13/53 bancas por família, no incluido en los rangos.
-- Ruido de Câmara aplicado a la fuerza de família en el Senado.
+- Sin datos de candidatos: el voto personal entra solo como ruido calibrado.
+- Sesgo por família observado en 2018 (centrão subestimado, campo PT
+  sobreestimado con ruido) no corregido.
+- Shocks de família de Câmara aplicados a la fuerza en el Senado.
 - Candidaturas impugnadas incluidas (el TSE no publica la situación 2026).

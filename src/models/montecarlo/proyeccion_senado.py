@@ -12,6 +12,11 @@ candidato. Sin encuestas, el modelo solo estima cuántas bancas tiene
 chance cada FAMÍLIA por UF, a partir de la fuerza de la família (voto a
 Câmara) y de cuántos candidatos presenta. No nombra ganadores.
 
+Ruido: (a) shocks de família, iguales a la Câmara (cambio de fuerza entre
+elecciones); (b) efecto propio de cada candidatura, multiplicativo: fuerza ×
+exp(N(0, sigma)); representa el error del modelo con la fuerza conocida. sigma se calibra por
+máxima verosimilitud con los ganadores reales de 2018.
+
 Regla por UF (determinística dado el ruido):
   - Fuerza de la família S_f = % de votos a Câmara en la UF (año base, con
     famílias del año objetivo) + ruido (mismo modelo que la Câmara).
@@ -124,10 +129,15 @@ def senadores_que_siguen(ano_objetivo: int) -> pd.DataFrame:
 # ---------------------------------------------------------------- regla
 
 def ganadores(fuerza: np.ndarray, n_cand: np.ndarray, beta: float,
-              bancas: int = BANCAS_POR_UF) -> np.ndarray:
+              bancas: int = BANCAS_POR_UF, efecto_candidato: np.ndarray | None = None) -> np.ndarray:
     """
     fuerza: (simulaciones × famílias) fuerza de cada família en la UF.
     n_cand: (famílias,) cantidad de candidatos de cada família en la UF.
+    efecto_candidato: (simulaciones × 2·famílias) shock propio de cada candidatura
+        (1º y 2º de cada família), en escala logarítmica: la fuerza de la
+        candidatura se multiplica por exp(efecto). Multiplicativo a propósito:
+        un candidato puede duplicar o achicar la fuerza de su família, pero un
+        partido de 0,5% no salta a 30% (con ruido aditivo sí pasaba).
     Devuelve (simulaciones × famílias) con bancas ganadas.
     """
     fuerza = np.atleast_2d(fuerza)
@@ -135,6 +145,8 @@ def ganadores(fuerza: np.ndarray, n_cand: np.ndarray, beta: float,
     primera = np.where(n_cand >= 1, fuerza, -np.inf)
     segunda = np.where(n_cand >= 2, beta * fuerza, -np.inf)
     entradas = np.concatenate([primera, segunda], axis=1)
+    if efecto_candidato is not None:
+        entradas = entradas * np.exp(efecto_candidato)  # -inf · x > 0 sigue siendo -inf
     top = np.argsort(-entradas, axis=1, kind="stable")[:, :bancas]
     validas = np.take_along_axis(entradas, top, axis=1) > -np.inf
     res = np.zeros((n_sim, n_fam), dtype=int)
@@ -196,10 +208,51 @@ def calibrar(ano: int, grilla: list[float]) -> tuple[float, pd.DataFrame]:
     return beta, tabla
 
 
+def calibrar_efecto_candidato(ano: int, beta: float, grilla_log: list[float],
+                              n_sim: int, seed: int) -> tuple[float, pd.DataFrame]:
+    """Desvío (escala log) del efecto propio de cada candidatura que hace más probables los
+    ganadores reales de `ano`, con la fuerza de Câmara de ese mismo año.
+
+    Verosimilitud = sum_uf log P(bancas por família simuladas == reales), con
+    suavizado 1/(2·n_sim) para no dar -inf. Las UF con != 2 electos en los datos
+    (MT 2018) quedan fuera. También informa en qué percentil de la distribución
+    simulada cae el total real de cada família (control de cobertura)."""
+    fuerza = fuerza_familias(ano, ano)
+    cands = candidatos(ano)
+    reales = electos(ano).groupby(["uf", "familia"]).size().unstack(fill_value=0)
+    familias = sorted(set(fuerza.columns) | set(cands["familia"]))
+    datos = _por_uf(fuerza, cands, familias)
+    reales = reales.reindex(index=sorted(datos), columns=familias, fill_value=0)
+    ufs_validas = [uf for uf in datos if reales.loc[uf].sum() == BANCAS_POR_UF]
+    total_real = reales.sum().to_numpy()
+
+    filas = []
+    for sigma in grilla_log:
+        rng = np.random.default_rng(seed)
+        loglik, totales = 0.0, np.zeros((n_sim, len(familias)), dtype=int)
+        for uf in sorted(datos):
+            s_uf, n = datos[uf]
+            efecto = rng.normal(0, sigma, (n_sim, 2 * len(familias)))
+            g = ganadores(np.repeat(s_uf[None, :], n_sim, axis=0), n, beta, efecto_candidato=efecto)
+            totales += g
+            if uf in ufs_validas:
+                p = (g == reales.loc[uf].to_numpy()).all(axis=1).mean()
+                loglik += np.log(p + 1 / (2 * n_sim))
+        percentil = (totales < total_real).mean(axis=0) + 0.5 * (totales == total_real).mean(axis=0)
+        filas.append({"sigma_log": sigma, "log_verosimilitud": round(float(loglik), 2),
+                      **{f"percentil_real_{f}": round(float(q), 2) for f, q in zip(familias, percentil)}})
+    tabla = pd.DataFrame(filas).assign(ufs_usadas=len(ufs_validas))
+    sigma = float(tabla.loc[tabla["log_verosimilitud"].idxmax(), "sigma_log"])
+    if sigma == max(grilla_log):
+        raise ValueError(f"La verosimilitud es máxima en el borde de la grilla (sigma={sigma}): ampliarla")
+    return sigma, tabla
+
+
 # ---------------------------------------------------------------- simulación
 
 def simular(fuerza: pd.DataFrame, cands: pd.DataFrame, ruido: pd.DataFrame,
-            beta: float, n_sim: int, seed: int) -> tuple[pd.DataFrame, np.ndarray, list[str], list[str]]:
+            beta: float, n_sim: int, seed: int,
+            sigma_candidato_log: float = 0.0) -> tuple[pd.DataFrame, np.ndarray, list[str], list[str]]:
     familias = sorted(set(fuerza.columns) | set(cands["familia"]))
     sig_uf = ruido["sigma_uf_pp"].reindex(familias).fillna(0).to_numpy() / 100
     sig_nac = ruido["sigma_nacional_pp"].reindex(familias).fillna(0).to_numpy() / 100
@@ -209,13 +262,14 @@ def simular(fuerza: pd.DataFrame, cands: pd.DataFrame, ruido: pd.DataFrame,
     rng = np.random.default_rng(seed)
     shock_nac = rng.normal(0, 1, (n_sim, len(familias))) * sig_nac
     shock_uf = rng.normal(0, 1, (len(ufs), n_sim, len(familias))) * sig_uf
+    efecto = rng.normal(0, sigma_candidato_log, (len(ufs), n_sim, 2 * len(familias)))
 
     por_uf = np.zeros((len(ufs), n_sim, len(familias)), dtype=int)
     for i, uf in enumerate(ufs):
         s, n = datos[uf]
         s_sim = np.clip(s + shock_nac + shock_uf[i], 0, None)
         s_sim[:, s == 0] = 0
-        por_uf[i] = ganadores(s_sim, n, beta)
+        por_uf[i] = ganadores(s_sim, n, beta, efecto_candidato=efecto[i])
     return pd.DataFrame(por_uf.sum(axis=0), columns=familias), por_uf, ufs, familias
 
 
@@ -236,12 +290,18 @@ def main(argv: list[str] | None = None) -> Path:
              int(calib["bancas_reales"].iat[0]),
              calib.drop(columns=["beta", "bancas_reales"]).to_string(index=False), beta)
 
+    ec = c["efecto_candidato"]
+    sigma_cand, calib_cand = calibrar_efecto_candidato(
+        c["calibracion"]["ano"], beta, ec["grilla_log"], ec["n_sim_calibracion"], seed)
+    log.info("Efecto candidato — verosimilitud %d por sigma:\n%s\n-> sigma = %.2f (log)",
+             c["calibracion"]["ano"], calib_cand.to_string(index=False), sigma_cand)
+
     fuerza = fuerza_familias(c["ano_base"], c["ano_objetivo"])
     cands = candidatos(c["ano_objetivo"])
     siguen = senadores_que_siguen(c["ano_objetivo"])
     ruido = cargar_ruido(cfg["camara"]["ruido"]["fuente_volatilidad"], cfg["camara"]["ruido"]["componente_nacional"])
 
-    en_juego, por_uf, ufs, familias = simular(fuerza, cands, ruido, beta, n_sim, seed)
+    en_juego, por_uf, ufs, familias = simular(fuerza, cands, ruido, beta, n_sim, seed, sigma_cand)
     fijos = siguen["familia"].value_counts().reindex(familias, fill_value=0)
     total = en_juego + fijos.to_numpy()
     if not (total.sum(axis=1) == 81).all():
@@ -272,6 +332,7 @@ def main(argv: list[str] | None = None) -> Path:
         .to_parquet(out / "bancas_familia_simulacion.parquet", index=False)
     prob_uf.to_csv(out / "probabilidad_uf_familia.csv", index=False)
     calib.to_csv(out / "calibracion.csv", index=False)
+    calib_cand.to_csv(out / "calibracion_efecto_candidato.csv", index=False)
     resumen.to_csv(out / "resumen.csv", index=False)
     siguen.to_csv(out / "senadores_que_siguen.csv", index=False)
 
@@ -288,9 +349,11 @@ def main(argv: list[str] | None = None) -> Path:
         "base": f"fuerza de família = voto a Câmara {c['ano_base']} por UF, famílias {c['ano_objetivo']} (sin encuestas)",
         "beta_calibrado": beta,
         "calibracion": calib.to_dict(orient="records"),
+        "sigma_efecto_candidato_log": sigma_cand,
+        "calibracion_efecto_candidato": calib_cand.to_dict(orient="records"),
         "que_estima": "bancas por família; NO nombra candidatos ganadores",
         "limitaciones": [
-            "El voto personal del candidato (decisivo en el Senado) no está en el modelo.",
+            "El voto personal del candidato no se modela con datos: entra como ruido por candidatura calibrado con 2018.",
             "consulta_cand 2026 no publica situación de candidatura: incluye candidaturas impugnadas.",
             "Calibración 2018 sobre 53 bancas: en MT la segunda electa (Selma Arruda, PSL) fue casada y sus votos anulados.",
             "Ruido de Câmara (volatilidad 2018->2022) aplicado a la fuerza de família en el Senado.",
@@ -301,8 +364,8 @@ def main(argv: list[str] | None = None) -> Path:
     (out / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     shutil.copyfile(out / "resumen.csv", LEGISLATIVO_DIR / "resumen_bancas_senado.csv")
 
-    log.info("Senado post-2026 — %d simulaciones, semilla %d, beta %.2f\n%s",
-             n_sim, seed, beta, resumen.to_string(index=False))
+    log.info("Senado post-2026 — %d simulaciones, semilla %d, beta %.2f, efecto candidato %.2f (log)\n%s",
+             n_sim, seed, beta, sigma_cand, resumen.to_string(index=False))
     log.info("Corrida guardada en %s", out.relative_to(ROOT).as_posix())
     return out
 
