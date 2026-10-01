@@ -1,0 +1,43 @@
+# config/familias_partidarias.yaml
+# Clasificación de partidos brasileños en familias políticas, para agregar
+# bloques y modelar coaliciones (misma lógica que config/familias.yaml
+# en atlas-congreso-2027, adaptada al multipartidismo brasileño).
+#
+# NOTA METODOLÓGICA: a diferencia de Argentina, Brasil tiene ~30 partidos
+# con representación parlamentaria y alta fluidez de bancada (troca-troca
+# partidário). Cada entrada tiene un campo `estable` para marcar partidos
+# con historial de fidelidad de bloque vs. los que rotan de alianza según
+# la elección.
+
+familias:
+  gobierno_lula:
+    nombre: "Base de gobierno (Lula / PT y aliados)"
+    partidos: [PT, PCdoB, PV, PSB, PSOL, REDE, AVANTE]
+    estable: false  # PSB y AVANTE rotan según la elección
+
+  centrao:
+    nombre: "Centrão (bloque fisiológico/negociador)"
+    partidos: [PP, REPUBLICANOS, UNIAO, PSD, MDB, SOLIDARIEDADE, AGIR]
+    estable: true  # vota con quien gobierna, históricamente
+
+  direita_bolsonarista:
+    nombre: "Derecha bolsonarista"
+    partidos: [PL, PRTB, PATRIOTA]
+    estable: true
+
+  centro_liberal:
+    nombre: "Centro / centro-liberal"
+    partidos: [NOVO, PODEMOS, CIDADANIA, PSDB]
+    estable: false
+
+  esquerda_independente:
+    nombre: "Izquierda fuera de la base de gobierno"
+    partidos: [PSOL]  # cuando no integra base_lula en esa legislatura
+    estable: false
+
+reglas_clasificacion:
+  # Un partido puede migrar de familia entre legislaturas — nunca hardcodear
+  # la familia en el dataset de resultados; resolver siempre por año + sigla
+  # contra este archivo en tiempo de ETL.
+  fuente_verificacion: "TSE — Filiação Partidária / Dados Abertos da Câmara (bloco parlamentar vigente)"
+  frecuencia_revision: "cada inicio de legislatura (fev/2027) y tras migraciones relevantes"

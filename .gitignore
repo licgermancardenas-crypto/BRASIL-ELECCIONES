@@ -1,0 +1,16 @@
+# Datos (raw y processed pesan GB — se versionan aparte, no en git)
+data/raw/
+data/interim/
+data/processed/*.parquet
+data/processed/**/*.parquet
+
+# Entornos
+.venv/
+__pycache__/
+*.pyc
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store

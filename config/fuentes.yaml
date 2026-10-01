@@ -1,0 +1,57 @@
+# config/fuentes.yaml
+# Catálogo único de fuentes — toda URL/endpoint usado por el ETL se declara acá,
+# nunca hardcodeado dentro de los scripts.
+
+tse:
+  dados_abertos:
+    base_url: "https://dadosabertos.tse.jus.br"
+    datasets:
+      candidatos: "dataset/candidatos-{ano}"
+      resultados: "dataset/resultados-{ano}"
+      padron: "dataset/eleitorado-{ano}"
+      prestacao_contas: "dataset/prestacao-de-contas-eleitorais-{ano}"
+      bens_candidatos: "dataset/bem-candidato-{ano}"
+  resultados_tempo_real:
+    # API de totalización por seção eleitoral — máximo nivel de detalle electoral
+    base_url: "https://resultados.tse.jus.br/oficial"
+    pattern: "ele{ano}/arquivo-urna/{turno}/dados/{uf}/{municipio}/{zona}/{secao}/{hash}/o00{turno}-{municipio}{zona}{secao}.rdv"
+  divulgacand:
+    base_url: "https://divulgacandcontas.tse.jus.br"
+  encuestas_registradas:
+    # Fichas técnicas de encuestas registradas obligatoriamente ante el TSE
+    base_url: "https://www.tse.jus.br/eleicoes/pesquisas-eleitorais"
+
+cepesp:
+  # Datos TSE ya limpiados y agregados (Brasil / UF / município / microrregião)
+  rest_api: "http://electionsBR.cepesp.io/api/consulta"
+  github_repo: "https://github.com/Cepesp-Fgv/tse-dados"
+
+ibge:
+  malhas_territoriais:
+    base_url: "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais"
+    setores_censitarios: "malha_de_setores_censitarios/censo_2022"
+    municipios: "malha_municipal"
+    epsg: 4674  # SIRGAS 2000
+  sidra_api:
+    # API tabular del IBGE (censo, PIB municipal, população)
+    base_url: "https://servicodados.ibge.gov.br/api/v3"
+  atlas_desenvolvimento_humano:
+    base_url: "http://www.atlasbrasil.org.br/acervo/atlas"
+
+legislativo:
+  camara_dados_abertos:
+    base_url: "https://dadosabertos.camara.leg.br/api/v2"
+    recursos: [deputados, votacoes, blocos, partidos, proposicoes]
+  senado_dados_abertos:
+    base_url: "https://legis.senado.leg.br/dadosabertos"
+    recursos: [senadores, votacoes, blocos, partidos]
+
+encuestadoras_referencia:
+  # Para scraping/registro manual de series históricas publicadas en prensa
+  - datafolha
+  - quaest
+  - nexus_btg
+  - atlasintel
+  - paranapesquisas
+  - genial_quaest
+  - ipec
