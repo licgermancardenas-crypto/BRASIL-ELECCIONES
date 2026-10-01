@@ -46,3 +46,19 @@ senado:
     # duplicar o reducir a la mitad la fuerza de su família (±1 desvío).
     grilla_log: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0, 3.0]
     n_sim_calibracion: 4000
+
+gobernadores:
+  # 27 elecciones independientes, 1 banca, balotaje POR ESTADO si nadie supera
+  # el 50% de los votos válidos (decisión del 2026-10-01: incluir ventaja de
+  # incumbente con un solo parámetro para gobernador y vice).
+  ano_base: 2022
+  ano_objetivo: 2026
+  anos_calibracion: [2018, 2022]
+  # Incumbente = electo gobernador o vice en el ciclo anterior (incluye
+  # elecciones suplementarias que estén en consulta_cand), por CPF y misma UF.
+  calibracion:
+    n_sim: 2000
+    beta: [0.1, 0.25, 0.5, 0.75, 1.0]                     # 2º y siguientes candidatos de una família
+    sigma_candidato: [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5]   # log, efecto propio
+    delta_incumbente: [0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5]  # log, ventaja
+    sigma_balotaje: [0, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5]          # log, ruido extra del 2º turno

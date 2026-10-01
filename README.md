@@ -106,6 +106,10 @@ python -m src.models.montecarlo.proyeccion_bancas
 # 3b. Senado post-2026: 27 que siguen (partido actual, API del Senado) + 54 en
 #     juego por família. NO nombra ganadores; leer docs/modelo_senado.md.
 python -m src.models.montecarlo.proyeccion_senado
+
+# 3c. Gobernadores 2026: 27 elecciones independientes con balotaje por UF,
+#     ventaja de incumbente calibrada con 2018+2022. Ver docs/modelo_gobernadores.md.
+python -m src.models.montecarlo.proyeccion_gobernadores
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

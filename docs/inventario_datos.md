@@ -1,11 +1,12 @@
 # Inventario de datos crudos
 
-Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:38. No editar a mano.
+Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 12:21. No editar a mano.
 
 `data/raw/` no se versiona en git (pesa GB): este archivo es el registro de qué versión de cada fuente se usó. Para reproducir, re-descargar y comparar sha256.
 
 | Dataset | Año | Versión (UTC) | MB | CSV | sha256 (12) | Fuente |
 |---|---|---|---:|---:|---|---|
+| candidatos | 2014 | 2026-10-01T145814Z | 4.5 | 29 | `ad31cc36d9a6` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2014.zip |
 | candidatos | 2018 | 2026-10-01T050047Z | 4.7 | 29 | `57f6881f1aa0` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2018.zip |
 | candidatos | 2022 | 2026-10-01T050050Z | 4.4 | 29 | `ea3043ebbec7` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2022.zip |
 | candidatos | 2022 | 2026-10-01T070111Z | 4.4 | 29 | `ed3b17e4d172` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2022.zip |
@@ -34,4 +35,4 @@ Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:38
 | vagas | 2022 | 2026-10-01T140823Z | 0.2 | 29 | `9b357e4a0513` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2022.zip |
 | vagas | 2026 | 2026-10-01T140824Z | 0.2 | 29 | `872498ce5508` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2026.zip |
 
-**Total:** 27 archivos, 1.68 GB.
+**Total:** 28 archivos, 1.69 GB.
