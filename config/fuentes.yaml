@@ -3,7 +3,40 @@
 # nunca hardcodeado dentro de los scripts.
 
 tse:
+  cdn:
+    # Archivos reales (zip con CSV por UF). El portal dados_abertos de abajo
+    # devuelve páginas HTML, no los zips — el extractor descarga desde acá.
+    base_url: "https://cdn.tse.jus.br/estatistica/sead/odsele"
+    # clave: nombre lógico del dataset en el proyecto
+    #   ruta:    plantilla relativa a base_url
+    #   carpeta: subcarpeta en data/raw/tse/
+    datasets:
+      resultados:
+        ruta: "votacao_candidato_munzona/votacao_candidato_munzona_{ano}.zip"
+        carpeta: "resultados"
+      resultados_partido:
+        ruta: "votacao_partido_munzona/votacao_partido_munzona_{ano}.zip"
+        carpeta: "resultados_partido"
+      detalle_votacion:
+        # comparecencia, abstención, blancos y nulos por município/zona
+        ruta: "detalhe_votacao_munzona/detalhe_votacao_munzona_{ano}.zip"
+        carpeta: "detalle_votacion"
+      candidatos:
+        ruta: "consulta_cand/consulta_cand_{ano}.zip"
+        carpeta: "candidaturas"
+      coligaciones:
+        ruta: "consulta_coligacao/consulta_coligacao_{ano}.zip"
+        carpeta: "coligaciones"
+      padron:
+        ruta: "perfil_eleitorado/perfil_eleitorado_{ano}.zip"
+        carpeta: "padron"
+      encuestas_registradas:
+        # Ficha técnica de cada encuesta registrada (PesqEle). NO trae resultados.
+        ruta: "pesquisa_eleitoral/pesquisa_eleitoral_{ano}.zip"
+        carpeta: "encuestas_registradas"
+
   dados_abertos:
+    # Portal (HTML) — referencia humana, no se descarga desde acá.
     base_url: "https://dadosabertos.tse.jus.br"
     datasets:
       candidatos: "dataset/candidatos-{ano}"

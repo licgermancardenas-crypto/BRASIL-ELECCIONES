@@ -71,9 +71,14 @@ atlas-brasil-2026/
 ```bash
 pip install -r requirements.txt
 
-# 1. Extracción
-python -m src.etl.extract.tse_extractor --dataset resultados --ano 2026
+# 1. Extracción (CDN del TSE; cada descarga queda versionada con manifest.json)
+python -m src.etl.extract.tse_extractor --dataset resultados resultados_partido detalle_votacion --ano 2018 2022
+python -m src.etl.extract.tse_extractor --dataset encuestas_registradas candidatos coligaciones --ano 2018 2022 2026
 python -m src.etl.extract.ibge_geo_extractor --nivel setores_censitarios --ano 2022
+python -m src.etl.inventario   # regenera docs/inventario_datos.md
+
+# 1b. Fichas técnicas de encuestas (PesqEle) normalizadas 2018/2022/2026
+python -m src.etl.transform.encuestas_fichas
 
 # 2. Transform (normaliza, cruza con familias_partidarias.yaml)
 python -m src.etl.transform.run_pipeline

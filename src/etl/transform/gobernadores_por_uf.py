@@ -12,44 +12,45 @@ definirse en primera vuelta (4/10) mientras otro va a segunda vuelta
 que resolver esto estado por estado, nunca asumir una fecha única de cierre
 para todo el país.
 
-Input:  data/raw/tse/resultados/{ano}/resultados_{ano}.zip
-Output: data/processed/electoral/gobernadores_por_uf.parquet
-        data/processed/electoral/gobernadores_balotaje_pendiente.csv
+Input:  data/raw/tse/resultados/{ano}/<version>/votacao_candidato_munzona_{ano}.zip
+Output: data/processed/electoral/gobernadores_por_uf_{ano}.parquet
+        data/processed/electoral/gobernadores_balotaje_pendiente_{ano}.csv
 """
 from __future__ import annotations
 
+import argparse
 import logging
-import zipfile
 from pathlib import Path
 
 import pandas as pd
 
+from src.etl.extract.tse_extractor import ultima_version
+from src.etl.transform.lector_tse import leer_zip_tse
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
-RAW_DIR = Path(__file__).resolve().parents[3] / "data" / "raw" / "tse" / "resultados"
 PROCESSED_DIR = Path(__file__).resolve().parents[3] / "data" / "processed" / "electoral"
 
 UMBRAL_PRIMERA_VUELTA = 0.50  # >50% de votos válidos evita balotaje en ese estado
 
 
-def cargar_resultados_crudos(ano: int) -> pd.DataFrame:
-    """Lee el zip de resultados del TSE y devuelve un DataFrame crudo."""
-    zip_path = RAW_DIR / str(ano) / f"resultados_{ano}.zip"
-    if not zip_path.exists():
-        raise FileNotFoundError(
-            f"No existe {zip_path} — correr antes "
-            f"`python -m src.etl.extract.tse_extractor --dataset resultados --ano {ano}`"
-        )
+COLUMNAS_CRUDAS = [
+    "SG_UF", "NR_TURNO", "DS_CARGO", "NM_URNA_CANDIDATO", "SG_PARTIDO",
+    "QT_VOTOS_NOMINAIS_VALIDOS", "NM_MUNICIPIO", "CD_MUNICIPIO",
+]
 
-    with zipfile.ZipFile(zip_path) as z:
-        # El TSE distribuye un CSV por UF dentro del zip; se concatenan todos.
-        csvs = [n for n in z.namelist() if n.endswith(".csv")]
-        frames = [
-            pd.read_csv(z.open(n), sep=";", encoding="latin-1", low_memory=False)
-            for n in csvs
-        ]
-    return pd.concat(frames, ignore_index=True)
+
+def cargar_resultados_crudos(ano: int) -> pd.DataFrame:
+    """Lee la última descarga de resultados del TSE, solo filas de gobernador."""
+    return leer_zip_tse(
+        ultima_version("resultados", ano),
+        columnas=COLUMNAS_CRUDAS,
+        # El zip de un año puede traer elecciones extraordinarias posteriores
+        # (ej. el de 2022 incluye la suplementaria de gobernador de RR del
+        # 21/06/2026): se excluyen siempre.
+        filtro={"DS_CARGO": {"GOVERNADOR"}, "NM_TIPO_ELEICAO": {"Eleição Ordinária"}},
+    )
 
 
 def filtrar_gobernador(df_crudo: pd.DataFrame) -> pd.DataFrame:
@@ -59,13 +60,17 @@ def filtrar_gobernador(df_crudo: pd.DataFrame) -> pd.DataFrame:
     columnas = {
         "SG_UF": "uf",
         "NR_TURNO": "turno",
-        "NM_CANDIDATO": "candidato",
+        "NM_URNA_CANDIDATO": "candidato",
         "SG_PARTIDO": "partido",
+        # Válidos: excluye votos a candidaturas anuladas/sub judice
         "QT_VOTOS_NOMINAIS_VALIDOS": "votos",
         "NM_MUNICIPIO": "municipio",
     }
     df = df.rename(columns={k: v for k, v in columnas.items() if k in df.columns})
-    return df[[c for c in columnas.values() if c in df.columns]]
+    df = df[[c for c in dict.fromkeys(columnas.values()) if c in df.columns]]
+    df["turno"] = pd.to_numeric(df["turno"])
+    df["votos"] = pd.to_numeric(df["votos"]).fillna(0)
+    return df
 
 
 def consolidar_por_uf(df_gob: pd.DataFrame, turno: int = 1) -> pd.DataFrame:
@@ -105,14 +110,16 @@ def main(ano: int = 2026) -> None:
     gobernadores = filtrar_gobernador(crudo)
 
     consolidado_t1 = consolidar_por_uf(gobernadores, turno=1)
-    consolidado_t1.to_parquet(PROCESSED_DIR / "gobernadores_por_uf.parquet")
+    consolidado_t1.to_parquet(PROCESSED_DIR / f"gobernadores_por_uf_{ano}.parquet")
 
     balotaje = detectar_balotaje_pendiente(consolidado_t1)
-    balotaje.to_csv(PROCESSED_DIR / "gobernadores_balotaje_pendiente.csv", index=False)
+    balotaje.to_csv(PROCESSED_DIR / f"gobernadores_balotaje_pendiente_{ano}.csv", index=False)
 
-    log.info("%d de 27 UFs van a balotaje de gobernador el 25/10:", len(balotaje))
+    log.info("%d: %d de 27 UFs van a balotaje de gobernador:", ano, len(balotaje))
     log.info("\n%s", balotaje.to_string(index=False))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ano", type=int, default=2026)
+    main(parser.parse_args().ano)

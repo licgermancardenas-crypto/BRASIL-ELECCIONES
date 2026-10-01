@@ -1,0 +1,89 @@
+# config/encuestadoras.yaml
+# Identidad canónica de cada casa encuestadora, resuelta por CNPJ (el nombre
+# de fantasía en PesqEle viene vacío/#NULO# en ~20% de los registros y las
+# casas cambian de razón social). Un CNPJ puede cambiar de marca y una marca
+# puede cambiar de CNPJ: por eso cada vínculo tiene vigencia por año.
+#
+# `continuidad_historica`: si el track record 2018/2022 de ese CNPJ se
+# hereda para 2026. "confirmada" = mismo CNPJ o mismo equipo/método
+# documentado; "pendiente" = requiere decisión explícita antes de usarlo.
+#
+# Fuente de los CNPJ: PesqEle (TSE), pesquisa_eleitoral_{2018,2022,2026}.
+
+casas:
+  datafolha:
+    nombre: "Datafolha"
+    cnpj: {"07630546000175": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  quaest:
+    nombre: "Quaest (incl. Genial/Quaest)"
+    cnpj: {"22445600000104": [2022, 2026]}
+    continuidad_historica: confirmada
+
+  atlasintel:
+    nombre: "AtlasIntel"
+    cnpj: {"19259002000128": [2022, 2026]}
+    continuidad_historica: confirmada
+
+  nexus:
+    nombre: "Nexus (ex-IPRI)"
+    # Mismo CNPJ registrado como IPRI en 2018/2022 y como Nexus en 2026.
+    cnpj: {"11077560000160": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  paranapesquisas:
+    nombre: "Paraná Pesquisas"
+    cnpj: {"81908345000140": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  ipec:
+    nombre: "Ipec"
+    cnpj: {"40735589000190": [2022, 2026]}
+    continuidad_historica: confirmada
+
+  ibope:
+    nombre: "Ibope Inteligência (cerró la línea electoral en 2021)"
+    cnpj: {"68802370000186": [2018]}
+    # Equipo directivo pasó a Ipec. Heredar su track record 2018 a Ipec es una
+    # decisión metodológica, no un hecho del dato: queda pendiente.
+    sucesora: ipec
+    continuidad_historica: pendiente
+
+  real_time_big_data:
+    nombre: "Real Time Big Data"
+    cnpj:
+      "29842579000111": [2018]
+      "22345021000181": [2022, 2026]
+    continuidad_historica: confirmada
+
+  ipespe:
+    nombre: "Ipespe"
+    cnpj: {"11849437000110": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  poderdata:
+    nombre: "PoderData"
+    cnpj: {"29550908000150": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  mda:
+    nombre: "MDA (CNT/MDA)"
+    cnpj: {"19090489000168": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+
+  futura:
+    nombre: "Futura Inteligência"
+    cnpj: {"03622028000159": [2018, 2022]}
+    continuidad_historica: confirmada
+
+  gerp:
+    nombre: "Gerp"
+    cnpj:
+      "32208779000121": [2022]
+      "05270800000146": [2026]
+    # Distinta razón social en cada ciclo; verificar que sea el mismo equipo.
+    continuidad_historica: pendiente
+
+# Casas no listadas: se identifican como "cnpj_<CNPJ>" y entran al agregador
+# con peso de calidad neutro (sin track record).
