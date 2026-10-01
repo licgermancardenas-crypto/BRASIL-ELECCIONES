@@ -80,3 +80,35 @@ presidencial:
   # El exterior (ZZ) suma al total nacional pero no entra en la estimación del
   # desvío entre UF (en 2018->2022 se movió 22 pp, valor atípico).
   excluir_del_desvio: [ZZ]
+
+encuestas:
+  # Fase 4: agregación de encuestas presidenciales (src/models/agregacion_encuestas.py).
+  # Decisión del 2026-10-01: resultados publicados en Wikipedia (PesqEle no
+  # trae %), alcance presidencial 1ª + 2ª vuelta, nacional.
+  ano_objetivo: 2026
+  anos_historicos: [2018, 2022]      # track record y backtest
+  # Track record: error de cada casa contra el resultado TSE, con las encuestas
+  # que terminan campo en los últimos `ventana_final_dias` antes de la elección.
+  ventana_final_dias: 7
+  # Pseudo-elecciones con el error medio de la industria al estimar el error
+  # de cada casa (una casa con 1 elección no queda ni premiada ni castigada del todo).
+  shrink_track_record: 2
+  # Agregación: encuestas con fin de campo dentro de los `ventana_campana_dias`
+  # previos al corte; peso = calidad × tamaño × decaimiento.
+  ventana_campana_dias: 45
+  # Decaimiento exponencial por antigüedad del fin de campo. Elegido con el
+  # backtest 2018/2022 (|error| medio top-2: 2 d 3,33 · 3 d 3,53 · 5 d 3,79 ·
+  # 7 d 3,95 · 10 d 4,09 pp; encuestas individuales 3,88): hubo movimiento
+  # tardío hacia Bolsonaro en ambos años. 3 y no 2 para no depender de 2-3
+  # encuestas; es una elección in-sample (6 mediciones), no validada fuera.
+  vida_media_dias: 3
+  muestra_tope: 3000                 # n efectivo máximo (efecto diseño): 5.000 casos no valen 2,5 × 2.000
+  # House effect: desvío de cada casa respecto de la tendencia de las DEMÁS
+  # casas (núcleo temporal con la misma vida media), con `shrink_house_effect`
+  # pseudo-encuestas en 0. Anclado en el promedio ponderado por calidad.
+  shrink_house_effect: 3
+  iteraciones_house_effect: 5
+  # Sesgo medio del agregador en el backtest (2018/2022). false = solo se usa
+  # como incertidumbre (media 0); el sesgo con corrección se reporta como
+  # sensibilidad. Con 2 elecciones no hay base para corregirlo de oficio.
+  corregir_sesgo_historico: false

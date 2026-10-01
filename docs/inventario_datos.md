@@ -1,6 +1,6 @@
 # Inventario de datos crudos
 
-Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 12:21. No editar a mano.
+Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 14:52. No editar a mano.
 
 `data/raw/` no se versiona en git (pesa GB): este archivo es el registro de qué versión de cada fuente se usó. Para reproducir, re-descargar y comparar sha256.
 
@@ -23,6 +23,9 @@ Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 12:21
 | encuestas_registradas | 2018 | 2026-10-01T050036Z | 1.3 | 29 | `6c26a1510b5a` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2018.zip |
 | encuestas_registradas | 2022 | 2026-10-01T050037Z | 3.2 | 29 | `5565b63ced39` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2022.zip |
 | encuestas_registradas | 2026 | 2026-10-01T050040Z | 5.9 | 27 | `d965d166bb90` | https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2026.zip |
+| encuestas_wikipedia | 2018 | 2026-10-01T173539Z | 0.6 | 0 | `99cf4d605229` | https://en.wikipedia.org/w/api.php?action=parse&page=Opinion+polling+for+the+2018+Brazilian+presidential+election&prop=text%7Crevid&format=json&formatversion=2 |
+| encuestas_wikipedia | 2022 | 2026-10-01T173541Z | 1.4 | 0 | `4dcc0a7f6ec9` | https://en.wikipedia.org/w/api.php?action=parse&page=Opinion+polling+for+the+2022+Brazilian+presidential+election&prop=text%7Crevid&format=json&formatversion=2 |
+| encuestas_wikipedia | 2026 | 2026-10-01T173542Z | 1.9 | 0 | `557d0587b310` | https://en.wikipedia.org/w/api.php?action=parse&page=Opinion+polling+for+the+2026+Brazilian+presidential+election&prop=text%7Crevid&format=json&formatversion=2 |
 | ibge_municipios | referencia | 2026-10-01T065209Z | 2.4 | 0 | `77bf68d9f5b1` | https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado |
 | resultados | 2018 | 2026-10-01T050930Z | 395.4 | 29 | `f880848ef4ba` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip |
 | resultados | 2022 | 2026-10-01T051735Z | 578.0 | 29 | `a53bfa7effb8` | https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip |
@@ -35,4 +38,4 @@ Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 12:21
 | vagas | 2022 | 2026-10-01T140823Z | 0.2 | 29 | `9b357e4a0513` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2022.zip |
 | vagas | 2026 | 2026-10-01T140824Z | 0.2 | 29 | `872498ce5508` | https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_vagas/consulta_vagas_2026.zip |
 
-**Total:** 28 archivos, 1.69 GB.
+**Total:** 31 archivos, 1.69 GB.

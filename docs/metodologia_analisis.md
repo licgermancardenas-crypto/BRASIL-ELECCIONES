@@ -156,9 +156,10 @@ con un brief consolidado cada 2-3 días en `reports/briefs/`.
 
 ## Lo que falta construir para que esta metodología esté operativa
 
-1. `src/models/agregacion_encuestas.py` (Fase 4) — es el eslabón que falta,
-   todo lo demás depende de esto.
-2. Tabla de correspondencia código TSE ↔ código IBGE (Fase 2).
-3. Script de backtesting (Fase 6) contra 2022.
-4. Historial de house effects por encuestadora — hay que construirlo a mano
-   la primera vez, comparando cada casa contra el resultado real de 2018/2022.
+1. ~~`src/models/agregacion_encuestas.py` (Fase 4)~~ — hecho para presidencial
+   nacional (2026-10-01), ver `docs/agregacion_encuestas.md`. Falta extenderlo a
+   gobernadores (encuestas por UF) y a intención por família para Câmara.
+2. ~~Tabla de correspondencia código TSE ↔ código IBGE (Fase 2).~~ Hecho.
+3. ~~Backtesting (Fase 6) contra 2022~~ — hecho contra 2018 y 2022, dentro del agregador.
+4. ~~Historial de house effects por encuestadora~~ — track record 2018/2022
+   automático contra el resultado TSE. Pendiente: cruzar con PesqEle por n.º de registro.

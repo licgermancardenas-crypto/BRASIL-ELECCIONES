@@ -114,6 +114,14 @@ python -m src.models.montecarlo.proyeccion_gobernadores
 # 3d. Presidencial: ESCENARIO de 2ª vuelta Lula vs Flávio Bolsonaro sobre la
 #     base 2022 (no pronóstico). Ver docs/escenario_presidencial.md.
 python -m src.models.montecarlo.proyeccion_presidencial
+
+# 4. Encuestas presidenciales (Wikipedia) -> agregador con track record 2018/2022,
+#    house effects y backtest -> Montecarlo 1ª/2ª vuelta. PRONÓSTICO nacional;
+#    leer docs/agregacion_encuestas.md (sesgo histórico contra el bolsonarismo).
+python -m src.etl.extract.wikipedia_extractor --ano 2018 2022 2026
+python -m src.etl.transform.encuestas_resultados
+python -m src.models.agregacion_encuestas
+python -m src.models.montecarlo.proyeccion_presidencial_encuestas
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

@@ -15,32 +15,38 @@ casas:
     nombre: "Datafolha"
     cnpj: {"07630546000175": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["datafolha"]
 
   quaest:
     nombre: "Quaest (incl. Genial/Quaest)"
     cnpj: {"22445600000104": [2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["quaest"]
 
   atlasintel:
     nombre: "AtlasIntel"
     cnpj: {"19259002000128": [2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["atlas", "atlasintel"]
 
   nexus:
     nombre: "Nexus (ex-IPRI)"
     # Mismo CNPJ registrado como IPRI en 2018/2022 y como Nexus en 2026.
     cnpj: {"11077560000160": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["nexus", "ipri"]
 
   paranapesquisas:
     nombre: "Paraná Pesquisas"
     cnpj: {"81908345000140": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["parana pesquisas"]
 
   ipec:
     nombre: "Ipec"
     cnpj: {"40735589000190": [2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["ipec"]
 
   ibope:
     nombre: "Ibope Inteligência (cerró la línea electoral en 2021)"
@@ -49,6 +55,7 @@ casas:
     # decisión metodológica, no un hecho del dato: queda pendiente.
     sucesora: ipec
     continuidad_historica: pendiente
+    alias_wikipedia: ["ibope"]
 
   real_time_big_data:
     nombre: "Real Time Big Data"
@@ -56,26 +63,31 @@ casas:
       "29842579000111": [2018]
       "22345021000181": [2022, 2026]
     continuidad_historica: confirmada
+    alias_wikipedia: ["real time", "realtime big data", "real time big data"]
 
   ipespe:
     nombre: "Ipespe"
     cnpj: {"11849437000110": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["ipespe"]
 
   poderdata:
     nombre: "PoderData"
     cnpj: {"29550908000150": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["poderdata", "datapoder360"]
 
   mda:
     nombre: "MDA (CNT/MDA)"
     cnpj: {"19090489000168": [2018, 2022, 2026]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["mda"]
 
   futura:
     nombre: "Futura Inteligência"
     cnpj: {"03622028000159": [2018, 2022]}
     continuidad_historica: confirmada
+    alias_wikipedia: ["futura"]
 
   gerp:
     nombre: "Gerp"
@@ -84,6 +96,59 @@ casas:
       "05270800000146": [2026]
     # Distinta razón social en cada ciclo; verificar que sea el mismo equipo.
     continuidad_historica: pendiente
+    alias_wikipedia: ["gerp"]
 
+  verita:
+    nombre: "Instituto Veritá"
+    cnpj: {"00654576000172": [2018, 2022, 2026]}
+    continuidad_historica: confirmada
+    alias_wikipedia: ["verita", "instituto verita"]
+
+  ideia:
+    nombre: "Ideia (ex-Idea Big Data)"
+    # 2018 y 2026 con CNPJ 13475743 (razón social distinta), 2022 con
+    # 41938632 (MM Ideia). Verificar que sea el mismo equipo antes de heredar.
+    cnpj:
+      "13475743000160": [2018, 2026]
+      "41938632000188": [2022]
+    continuidad_historica: pendiente
+    alias_wikipedia: ["ideia", "idea big data", "ideia big data"]
+
+  vox_brasil:
+    nombre: "Vox Brasil"
+    # CNPJ distinto en 2026 (45613076) que en 2018/2022 (Vox do Brasil, 23254436).
+    cnpj:
+      "23254436000102": [2018, 2022]
+      "45613076000120": [2026]
+    continuidad_historica: pendiente
+    alias_wikipedia: ["vox brasil"]
+
+  palver:
+    nombre: "Palver"
+    cnpj: {"41522141000151": [2026]}
+    continuidad_historica: confirmada
+    alias_wikipedia: ["palver"]
+
+  indexa:
+    nombre: "Instituto Indexa"
+    cnpj: {"10340949000194": [2026]}
+    continuidad_historica: confirmada
+    alias_wikipedia: ["indexa"]
+
+  fsb:
+    nombre: "FSB Pesquisa"
+    cnpj: {}   # no figura en PesqEle con este nombre para presidente
+    continuidad_historica: confirmada
+    alias_wikipedia: ["fsb", "fsb pesquisa", "fsb comunicacao"]
+
+  sensus:
+    nombre: "Sensus"
+    cnpj: {}
+    continuidad_historica: confirmada
+    alias_wikipedia: ["sensus"]
+
+# `alias_wikipedia`: nombres (en minúscula, sin acentos) con que la casa
+# aparece en las tablas de Wikipedia; "Genial/Quaest" se parte en "/" y se
+# busca cada parte (el medio que contrata no es la casa).
 # Casas no listadas: se identifican como "cnpj_<CNPJ>" y entran al agregador
 # con peso de calidad neutro (sin track record).

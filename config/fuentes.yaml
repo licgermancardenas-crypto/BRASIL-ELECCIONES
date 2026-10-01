@@ -96,6 +96,18 @@ legislativo:
     # Senadores en ejercicio hoy, con partido actual y legislaturas del mandato
     senadores_en_ejercicio: "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
 
+wikipedia:
+  # Resultados publicados de encuestas presidenciales (PesqEle no trae %).
+  # Fuente secundaria (compilación comunitaria): se guarda el HTML renderizado
+  # de una revisión concreta (revid en el manifest) para que el dato sea
+  # reproducible aunque la página cambie. Decisión del 2026-10-01.
+  api: "https://en.wikipedia.org/w/api.php"
+  user_agent: "ATLAS-Brasil-2026/0.1 (investigacion electoral; contacto via repo)"
+  paginas_encuestas_presidenciales:
+    2018: "Opinion polling for the 2018 Brazilian presidential election"
+    2022: "Opinion polling for the 2022 Brazilian presidential election"
+    2026: "Opinion polling for the 2026 Brazilian presidential election"
+
 encuestadoras_referencia:
   # Para scraping/registro manual de series históricas publicadas en prensa
   - datafolha

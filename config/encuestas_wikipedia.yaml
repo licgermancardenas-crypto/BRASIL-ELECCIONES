@@ -1,0 +1,82 @@
+# config/encuestas_wikipedia.yaml
+# Qué tablas de las páginas de Wikipedia (src/etl/extract/wikipedia_extractor.py)
+# se leen y cómo se interpreta cada columna. Lo usa
+# src/etl/transform/encuestas_resultados.py.
+#
+# `indice` = posición de la tabla en el HTML de la revisión guardada en raw/
+# (pandas.read_html). Como raw/ es inmutable, el índice es estable para esa
+# versión; si una descarga nueva reordena la página, el chequeo de columnas
+# (`candidatos` deben estar todos) corta el transform en vez de leer otra tabla.
+#
+# Solo se leen las tablas del período de campaña: el agregador pondera por
+# recencia y el track record se mide en la última semana.
+#
+# `candidatos`: encabezado de Wikipedia (sin notas al pie) -> id y partido
+# (sigla TSE). La família se resuelve con config/familias_partidarias.yaml.
+
+anos:
+  2018:
+    eleccion: {1: 2018-10-07, 2: 2018-10-28}
+    tablas:
+      - {vuelta: 1, indice: 1}   # First round, July–Oct 2018
+      - {vuelta: 2, indice: 7}   # Second round, after the first round
+      # Second round, before the first round: columnas por PARTIDO y la celda
+      # dice "41% (Haddad)"; nombre_wiki descarta los cruces con otro candidato
+      # del partido (Lula por el PT hasta el 11/9/2018).
+      - vuelta: 2
+        indice: 8
+        antes_primera_vuelta: true
+        ignorar: ["PSB"]
+        candidatos:
+          "PT": {id: haddad, partido: PT, nombre_wiki: haddad}
+          "PSL": {id: bolsonaro, partido: PSL, nombre_wiki: bolsonaro}
+          "PDT": {id: ciro_gomes, partido: PDT, nombre_wiki: gomes}
+          "REDE": {id: marina_silva, partido: REDE, nombre_wiki: silva}
+          "MDB": {id: meirelles, partido: MDB, nombre_wiki: meirelles}
+          "PODE": {id: alvaro_dias, partido: PODE, nombre_wiki: dias}
+          "PSDB": {id: alckmin, partido: PSDB, nombre_wiki: alckmin}
+    candidatos:
+      "Haddad PT": {id: haddad, partido: PT}
+      "Haddad": {id: haddad, partido: PT}
+      "Gomes PDT": {id: ciro_gomes, partido: PDT}
+      "Silva REDE": {id: marina_silva, partido: REDE}
+      "Meirelles MDB": {id: meirelles, partido: MDB}
+      "Dias PODE": {id: alvaro_dias, partido: PODE}
+      "Alckmin PSDB": {id: alckmin, partido: PSDB}
+      "Amoêdo NOVO": {id: amoedo, partido: NOVO}
+      "Bolsonaro PSL": {id: bolsonaro, partido: PSL}
+      "Bolsonaro": {id: bolsonaro, partido: PSL}
+
+  2022:
+    eleccion: {1: 2022-10-02, 2: 2022-10-30}
+    tablas:
+      - {vuelta: 1, indice: 2}   # First round, Jul–Oct 2022
+      - {vuelta: 2, indice: 10}  # Second round, after 2 October 2022
+      - {vuelta: 2, indice: 11, antes_primera_vuelta: true}  # 2021 to 2 October 2022
+    candidatos:
+      "Bolsonaro PL": {id: bolsonaro, partido: PL}
+      "Lula PT": {id: lula, partido: PT}
+      "Gomes PDT": {id: ciro_gomes, partido: PDT}
+      "Tebet MDB": {id: tebet, partido: MDB}
+
+  2026:
+    eleccion: {1: 2026-10-04, 2: 2026-10-25}
+    tablas:
+      - {vuelta: 1, indice: 2}   # First round, Aug–Oct (campaign period)
+      - {vuelta: 2, indice: 9, antes_primera_vuelta: true}   # Second round, Aug–Oct (campaign); varios cruces por encuesta
+    candidatos:
+      "Lula PT": {id: lula, partido: PT}
+      "F. Bolsonaro PL": {id: flavio_bolsonaro, partido: PL}
+      "Caiado PSD": {id: caiado, partido: PSD}
+      "Zema Novo": {id: zema, partido: NOVO}
+      "Santos Mission": {id: renan_santos, partido: MISSÃO}
+      "Cury Avante": {id: cury, partido: AVANTE}
+
+# Encabezados que no son candidatos (regex sobre el encabezado en minúscula).
+columnas:
+  encuestadora: "^(pollster|polling firm|publisher)"
+  periodo: "^(polling period|date)"
+  muestra: "^sample size"
+  otros: "^others"
+  no_validos: "^(blank|abst)"
+  ignorar: "^(margin of error|lead|link|not affiliated|\\?)"

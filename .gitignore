@@ -21,3 +21,5 @@ data/processed/legislativo/senado/
 data/processed/electoral/gobernadores_sim/
 data/processed/electoral/presidencial_sim/
 data/processed/**/*.json
+data/processed/electoral/encuestas_agregadas/
+data/processed/electoral/presidencial_encuestas_sim/

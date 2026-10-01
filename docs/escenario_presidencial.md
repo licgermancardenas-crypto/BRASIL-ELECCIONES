@@ -1,5 +1,8 @@
 # Escenario presidencial 2026 (segunda vuelta)
 
+> **Desde el 2026-10-01 hay pronóstico con encuestas:** `docs/agregacion_encuestas.md`.
+> Este escenario (base 2022, sin encuestas) queda como referencia estructural por UF.
+
 Código: `src/models/montecarlo/proyeccion_presidencial.py`. Parámetros:
 `config/modelo.yaml` (sección `presidencial`). Cada corrida queda en
 `data/processed/electoral/presidencial_sim/<fecha_utc>/`.
