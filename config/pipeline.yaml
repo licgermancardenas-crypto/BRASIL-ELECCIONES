@@ -28,3 +28,6 @@ familia:
   # false = un año con clasificación en estado `propuesta` corta el pipeline.
   # Ponerlo en true solo para exploración (los outputs quedan marcados).
   permitir_propuesta: false
+  # Volatilidad con partidos fijos en su família: se clasifica todo con la
+  # tabla de este año (la que usa el Montecarlo). Decisión del 2026-10-01.
+  ano_referencia_composicion: 2026

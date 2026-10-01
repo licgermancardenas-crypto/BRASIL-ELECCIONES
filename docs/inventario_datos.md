@@ -1,6 +1,6 @@
 # Inventario de datos crudos
 
-Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 10:56. No editar a mano.
+Generado automáticamente por `python -m src.etl.inventario` el 2026-10-01 11:02. No editar a mano.
 
 `data/raw/` no se versiona en git (pesa GB): este archivo es el registro de qué versión de cada fuente se usó. Para reproducir, re-descargar y comparar sha256.
 

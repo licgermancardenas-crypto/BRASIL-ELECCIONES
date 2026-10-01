@@ -141,10 +141,10 @@ def _paso_familia(ano: int, permitir_propuesta: bool) -> Callable:
     return correr
 
 
-def _paso_serie_historica(anos: list[int]) -> Callable:
+def _paso_serie_historica(anos: list[int], ano_referencia: int) -> Callable:
     def correr():
         from src.etl.load import serie_historica
-        return serie_historica.main(anos)
+        return serie_historica.main(anos, ano_referencia)
     return correr
 
 
@@ -182,7 +182,7 @@ def armar_plan(cfg: dict, sin_descarga: bool, permitir_propuesta: bool) -> list[
     for ano in fam["anos"]:
         pasos.append(Paso("familia", f"câmara por família {ano}", _paso_familia(ano, permitir)))
 
-    pasos.append(Paso("carga", "serie histórica y volatilidad", _paso_serie_historica(fam["anos"])))
+    pasos.append(Paso("carga", "serie histórica y volatilidad", _paso_serie_historica(fam["anos"], fam["ano_referencia_composicion"])))
     pasos.append(Paso("carga", "inventario de datos", _paso_inventario()))
     return pasos
 

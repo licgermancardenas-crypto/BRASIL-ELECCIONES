@@ -54,6 +54,33 @@ def normalizar_sigla(sigla: str) -> str:
 
 
 @lru_cache
+def _linaje() -> tuple[tuple[str, str, int], ...]:
+    with open(CONFIG_PARTIDOS, encoding="utf-8") as f:
+        return tuple((normalizar_sigla(e["de"]), normalizar_sigla(e["a"]), int(e["desde"]))
+                     for e in yaml.safe_load(f)["linaje"])
+
+
+def sigla_sucesora(sigla: str, ano_origen: int, ano_destino: int) -> str:
+    """Sigla que continúa a `sigla` (vigente en ano_origen) en ano_destino, siguiendo
+    cambios de nombre, fusiones e incorporaciones de config/partidos.yaml.
+    Ej.: PRP 2018 -> PATRIOTA (2019) -> PRD (2023)."""
+    actual = normalizar_sigla(sigla)
+    for _ in range(10):  # cadenas cortas; el límite evita ciclos por error de config
+        siguiente = [(a, desde) for de, a, desde in _linaje()
+                     if de == actual and ano_origen < desde <= ano_destino]
+        if not siguiente:
+            return actual
+        actual = min(siguiente, key=lambda x: x[1])[0]
+    raise ValueError(f"Ciclo en el linaje de {sigla}")
+
+
+def familia_composicion_fija(sigla: str, ano_eleccion: int, ano_referencia: int) -> str:
+    """Família de `sigla` según la clasificación de ano_referencia (partidos fijos en su
+    família): se lleva la sigla a su sucesora en ano_referencia y se clasifica ahí."""
+    return familia(sigla_sucesora(sigla, ano_eleccion, ano_referencia), ano_referencia)
+
+
+@lru_cache
 def tabla_ano(ano: int) -> tuple[str, dict[str, str]]:
     """(estado, {sigla: familia}) para un año. Valida que no haya duplicados."""
     with open(CONFIG_FAMILIAS, encoding="utf-8") as f:

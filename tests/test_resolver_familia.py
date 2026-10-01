@@ -37,3 +37,29 @@ def test_asignar_familia_lista_todos_los_faltantes():
     df = pd.DataFrame({"partido": ["PT", "XX1", "XX2"]})
     with pytest.raises(rf.PartidoSinClasificar, match="XX1.*XX2"):
         rf.asignar_familia(df, 2022, permitir_propuesta=True)
+
+
+def test_sigla_sucesora_sigue_cadenas():
+    assert rf.sigla_sucesora("PRP", 2018, 2026) == "PRD"       # PRP -> PATRIOTA (2019) -> PRD (2023)
+    assert rf.sigla_sucesora("PSL", 2018, 2026) == "UNIÃO"
+    assert rf.sigla_sucesora("PRB", 2018, 2026) == "REPUBLICANOS"
+    assert rf.sigla_sucesora("PATRI", 2018, 2026) == "PRD"     # alias + cadena
+    assert rf.sigla_sucesora("PT", 2018, 2026) == "PT"
+
+
+def test_sigla_sucesora_respeta_el_ano_destino():
+    assert rf.sigla_sucesora("PRP", 2018, 2022) == "PATRIOTA"  # PRD recién desde 2023
+    assert rf.sigla_sucesora("PROS", 2022, 2022) == "PROS"
+
+
+def test_todos_los_partidos_historicos_llegan_a_2026():
+    for ano in (2018, 2022):
+        _, mapa = rf.tabla_ano(ano)
+        for partido in mapa:
+            rf.familia_composicion_fija(partido, ano, 2026)  # no debe levantar
+
+
+def test_composicion_fija_ignora_reclasificacion():
+    # SOLIDARIEDADE estaba en gobierno_lula en 2022; fija en 2026 es centrao en ambos años
+    assert rf.familia_composicion_fija("SOLIDARIEDADE", 2022, 2026) == "centrao"
+    assert rf.familia_composicion_fija("SOLIDARIEDADE", 2018, 2026) == "centrao"
