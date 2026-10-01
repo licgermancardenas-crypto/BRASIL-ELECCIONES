@@ -62,3 +62,21 @@ gobernadores:
     sigma_candidato: [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5]   # log, efecto propio
     delta_incumbente: [0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5]  # log, ventaja
     sigma_balotaje: [0, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5]          # log, ruido extra del 2º turno
+
+presidencial:
+  # ESCENARIO, no pronóstico (decisión del 2026-10-01, sin encuestas).
+  # Premisa: 2ª vuelta entre el candidato de gobierno_lula y el de
+  # direita_bolsonarista; el de 2026 hereda el voto de su família en la 2ª
+  # vuelta de ano_base. No se modela quién pasa la 1ª vuelta.
+  ano_base: 2022
+  ano_referencia_cambio: 2018   # cambio ano_referencia -> ano_base mide el ruido
+  familias_balotaje: [gobierno_lula, direita_bolsonarista]
+  # Partido del candidato 2026 de cada família en la 2ª vuelta del escenario.
+  # Explícito porque cada família tiene más de un candidato presidencial
+  # (AVANTE/Cury figura en gobierno_lula y PRTB en direita_bolsonarista).
+  partido_candidato:
+    gobierno_lula: PT
+    direita_bolsonarista: PL
+  # El exterior (ZZ) suma al total nacional pero no entra en la estimación del
+  # desvío entre UF (en 2018->2022 se movió 22 pp, valor atípico).
+  excluir_del_desvio: [ZZ]

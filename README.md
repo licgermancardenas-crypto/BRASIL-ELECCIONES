@@ -110,6 +110,10 @@ python -m src.models.montecarlo.proyeccion_senado
 # 3c. Gobernadores 2026: 27 elecciones independientes con balotaje por UF,
 #     ventaja de incumbente calibrada con 2018+2022. Ver docs/modelo_gobernadores.md.
 python -m src.models.montecarlo.proyeccion_gobernadores
+
+# 3d. Presidencial: ESCENARIO de 2ª vuelta Lula vs Flávio Bolsonaro sobre la
+#     base 2022 (no pronóstico). Ver docs/escenario_presidencial.md.
+python -m src.models.montecarlo.proyeccion_presidencial
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

@@ -1,0 +1,14 @@
+{
+  "escenario": "2ª vuelta gobierno_lula vs direita_bolsonarista, base 2022",
+  "candidatos_2026": {
+    "gobierno_lula": "LULA (PT)",
+    "direita_bolsonarista": "FLAVIO BOLSONARO (PL)"
+  },
+  "base_pct_nacional": 50.9,
+  "prob_gana_gobierno_lula": 0.557,
+  "pct_gobierno_lula_p10": 42.9,
+  "pct_gobierno_lula_mediana": 50.9,
+  "pct_gobierno_lula_p90": 58.9,
+  "sigma_nacional_pp": 6.03,
+  "sigma_uf_pp": 4.57
+}
