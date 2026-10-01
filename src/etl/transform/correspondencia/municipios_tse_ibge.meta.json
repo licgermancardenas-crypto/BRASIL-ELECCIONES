@@ -1,5 +1,5 @@
 {
-  "generado_utc": "2026-10-01T07:01:22+00:00",
+  "generado_utc": "2026-10-01T13:55:00+00:00",
   "filas": 5570,
   "por_metodo": {
     "nombre_exacto": 5557,
@@ -22,7 +22,7 @@
   "fuentes": {
     "tse_detalle_votacion": [
       "data/raw/tse/detalle_votacion/2018/2026-10-01T050057Z/detalhe_votacao_munzona_2018.zip",
-      "data/raw/tse/detalle_votacion/2022/2026-10-01T050059Z/detalhe_votacao_munzona_2022.zip"
+      "data/raw/tse/detalle_votacion/2022/2026-10-01T135440Z/detalhe_votacao_munzona_2022.zip"
     ],
     "ibge_localidades": {
       "archivo": "data/raw/referencia/ibge_municipios/2026-10-01T065209Z/municipios_ibge.json",

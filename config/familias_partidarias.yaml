@@ -72,7 +72,8 @@ anos:
       - "PSD: en centrao, pero en 2026 lleva candidato presidencial propio (Ronaldo Caiado)."
 
   2022:
-    estado: propuesta
+    # Validada por Germán el 2026-10-01.
+    estado: vigente
     clasificacion:
       # coligação Lula 1ª vuelta: FE BRASIL (PT/PCdoB/PV), PSOL REDE, PSB, SOLIDARIEDADE, AGIR, AVANTE, PROS
       gobierno_lula: [PT, PC do B, PV, PSOL, REDE, PSB, SOLIDARIEDADE, AVANTE, AGIR, PROS]
@@ -85,7 +86,8 @@ anos:
       sin_alineamiento: [DC, PMN, PMB]
 
   2018:
-    estado: propuesta
+    # Validada por Germán el 2026-10-01.
+    estado: vigente
     clasificacion:
       # coligação Haddad: PT, PCdoB, PROS. PSB neutral formal en 1ª vuelta (acuerdo con PT).
       gobierno_lula: [PT, PC do B, PROS, PSB]
