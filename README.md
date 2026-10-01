@@ -88,8 +88,11 @@ python -m src.etl.transform.correspondencia_municipios
 # 1d. Cobertura de la clasificación partido -> familia por año
 python -m src.models.bloques.resolver_familia --reporte
 
-# 2. Transform (normaliza, cruza con familias_partidarias.yaml)
+# 2. Pipeline completo: extracción -> transformación -> família -> carga
+#    (plan en config/pipeline.yaml; registro de cada corrida en data/processed/_corridas/)
 python -m src.etl.transform.run_pipeline
+python -m src.etl.transform.run_pipeline --sin-descarga --desde familia
+python -m src.etl.transform.run_pipeline --permitir-propuesta   # solo exploración
 
 # 2b. Gobernadores por UF (detecta qué estados van a balotaje el 25/10 —
 #     es un balotaje independiente por estado, no uno nacional)

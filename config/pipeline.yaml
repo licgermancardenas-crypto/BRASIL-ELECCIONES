@@ -1,0 +1,30 @@
+# config/pipeline.yaml
+# Plan de corrida de src/etl/transform/run_pipeline.py. Qué se baja, qué se
+# transforma y para qué años — nada de esto vive dentro del orquestador.
+#
+# `anos` = requeridos: si faltan, el pipeline corta.
+# `anos_opcionales` = se intentan; si la fuente todavía no publicó (ej.
+# resultados 2026 antes del 4/10), se registra y se sigue.
+
+extraccion:
+  tse:
+    - {dataset: resultados,         anos: [2018, 2022], anos_opcionales: [2026]}
+    - {dataset: resultados_partido, anos: [2018, 2022], anos_opcionales: [2026]}
+    - {dataset: detalle_votacion,   anos: [2018, 2022], anos_opcionales: [2026]}
+    - {dataset: candidatos,         anos: [2018, 2022, 2026]}
+    - {dataset: coligaciones,       anos: [2018, 2022, 2026]}
+    # Encuestas fuera del pipeline por decisión del 2026-10-01 ("sin encuestas").
+    # - {dataset: encuestas_registradas, anos: [2018, 2022, 2026]}
+  referencia: [ibge_municipios, tse_ibge_betafcc]
+
+transformacion:
+  correspondencia_municipios: true
+  # gobernadores: se corre para cada año que tenga resultados descargados
+  gobernadores_anos: [2018, 2022, 2026]
+
+familia:
+  # Câmara por família: se corre para cada año con resultados descargados.
+  anos: [2018, 2022, 2026]
+  # false = un año con clasificación en estado `propuesta` corta el pipeline.
+  # Ponerlo en true solo para exploración (los outputs quedan marcados).
+  permitir_propuesta: false

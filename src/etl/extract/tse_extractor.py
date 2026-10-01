@@ -80,7 +80,7 @@ def ultima_version(dataset: str, ano: int) -> Path:
         ) from None
 
 
-def descargar_dataset(dataset: str, ano: int, timeout: int = 120) -> Path | None:
+def descargar_dataset(dataset: str, ano: int, timeout: int = 120, forzar: bool = False) -> Path | None:
     cfg = cargar_config()["tse"]["cdn"]
     ruta = cfg["datasets"][dataset]["ruta"].format(ano=ano)
     return descargar_versionado(
@@ -90,6 +90,7 @@ def descargar_dataset(dataset: str, ano: int, timeout: int = 120) -> Path | None
         meta={"dataset": dataset, "ano": ano},
         validar=_validar_zip,
         timeout=timeout,
+        forzar=forzar,
     )
 
 

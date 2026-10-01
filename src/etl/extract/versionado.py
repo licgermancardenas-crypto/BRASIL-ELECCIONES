@@ -5,8 +5,10 @@ Descarga versionada a data/raw/ (principio: raw es inmutable).
 
 Cada descarga va a <base>/<fecha_utc>/<archivo> con un manifest.json (url,
 sha256, tamaño, fecha). Si el contenido es idéntico (mismo sha256) a la
-última versión guardada, no se duplica. Si `validar` levanta DescargaInvalida,
-el archivo se descarta y no llega a raw/.
+última versión guardada, no se duplica. Antes de descargar se consulta la
+cabecera (HEAD): si Last-Modified y tamaño coinciden con la última versión,
+ni siquiera se baja (los resultados del TSE pesan cientos de MB).
+Si `validar` levanta DescargaInvalida, el archivo se descarta y no llega a raw/.
 """
 from __future__ import annotations
 
@@ -43,6 +45,25 @@ def ultima_version_en(base: Path) -> Path:
     return manifests[-1].parent / manifest["archivo"]
 
 
+def _sin_cambios_remotos(url: str, base: Path, timeout: int) -> Path | None:
+    """Última versión local si la cabecera remota indica que no cambió; si no, None."""
+    try:
+        previo = ultima_version_en(base)
+    except FileNotFoundError:
+        return None
+    manifest = json.loads((previo.parent / "manifest.json").read_text(encoding="utf-8"))
+    if not manifest.get("last_modified_fuente"):
+        return None
+    try:
+        cab = requests.head(url, timeout=timeout, allow_redirects=True).headers
+    except requests.RequestException:
+        return None
+    if (cab.get("Last-Modified") == manifest["last_modified_fuente"]
+            and str(manifest["bytes"]) == cab.get("Content-Length")):
+        return previo
+    return None
+
+
 def descargar_versionado(
     url: str,
     base: Path,
@@ -50,8 +71,16 @@ def descargar_versionado(
     meta: dict,
     validar: Callable[[Path], dict] | None = None,
     timeout: int = 120,
+    forzar: bool = False,
 ) -> Path | None:
-    """Baja `url` a `base`. `validar(path)` devuelve metadata extra para el manifest."""
+    """Baja `url` a `base`. `validar(path)` devuelve metadata extra para el manifest.
+    Con forzar=True se descarga aunque la cabecera remota no indique cambios."""
+    if not forzar:
+        previo = _sin_cambios_remotos(url, base, timeout)
+        if previo is not None:
+            log.info("Sin cambios en la fuente (Last-Modified y tamaño iguales): %s", previo.parent.name)
+            return previo
+
     base.mkdir(parents=True, exist_ok=True)
     tmp = base / f".{nombre}.part"
 

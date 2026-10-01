@@ -121,12 +121,17 @@ def _evidencia(ano: int) -> pd.DataFrame:
     electos = cand[cand["DS_SIT_TOT_TURNO"].str.startswith("ELEITO", na=False)]
     if len(electos):
         t["bancas"] = electos.groupby("SG_PARTIDO").size()
+        t["bancas"] = t["bancas"].fillna(0).astype(int)
 
     try:
+        # Total del partido = nominales válidos + legenda válidos (ver camara_por_familia)
         part = leer_zip_tse(ultima_version("resultados_partido", ano),
-                            columnas=["SG_PARTIDO", "QT_TOTAL_VOTOS_LEG_VALIDOS"], filtro=dep)
+                            columnas=["SG_PARTIDO", "QT_VOTOS_NOMINAIS_VALIDOS",
+                                      "QT_TOTAL_VOTOS_LEG_VALIDOS"], filtro=dep)
         part["SG_PARTIDO"] = part["SG_PARTIDO"].map(normalizar_sigla)
-        v = pd.to_numeric(part["QT_TOTAL_VOTOS_LEG_VALIDOS"]).groupby(part["SG_PARTIDO"]).sum()
+        votos = (pd.to_numeric(part["QT_VOTOS_NOMINAIS_VALIDOS"]).fillna(0)
+                 + pd.to_numeric(part["QT_TOTAL_VOTOS_LEG_VALIDOS"]).fillna(0))
+        v = votos.groupby(part["SG_PARTIDO"]).sum()
         t["voto_camara_pct"] = v / v.sum() * 100
     except FileNotFoundError:
         pass
@@ -164,6 +169,8 @@ def reporte() -> None:
             cub = ev.loc[ev["familia"] != "**SIN CLASIFICAR**", "voto_camara_pct"].sum()
             lineas.append(f"Cobertura del voto válido a Câmara: **{cub:.2f}%**.")
             por_fam = ev.groupby("familia")[["voto_camara_pct"] + (["bancas"] if "bancas" in ev else [])].sum()
+            if "bancas" in por_fam:
+                por_fam["bancas"] = por_fam["bancas"].astype(int)
             lineas += ["", por_fam.sort_values("voto_camara_pct", ascending=False).to_markdown(floatfmt=".2f"), ""]
         if len(faltan):
             lineas.append(f"Partidos con candidatos y sin familia: {', '.join(faltan.index)}.")
