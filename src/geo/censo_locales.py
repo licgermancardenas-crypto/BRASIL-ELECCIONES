@@ -95,6 +95,8 @@ def asignar(setores: pd.DataFrame, locales: pd.DataFrame) -> pd.Series:
     """Índice (en `locales`) del local más cercano de su município para cada setor."""
     asign = pd.Series(-1, index=setores.index)
     loc = locales.dropna(subset=["lat", "lon", "cd_ibge"])
+    if "coord_origen" in loc:  # el centroide de barrio es aproximado: no sirve para trazar áreas
+        loc = loc[loc["coord_origen"] != "bairro"]
     por_mun = {m: x for m, x in loc.groupby("cd_ibge")}
     for m, s in setores.groupby("cd_mun"):
         x = por_mun.get(m)

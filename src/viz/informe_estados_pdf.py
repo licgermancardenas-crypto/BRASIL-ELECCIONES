@@ -19,6 +19,7 @@ import subprocess
 from datetime import date
 from pathlib import Path
 
+from src.geo.divisiones import GEO_DIR
 from src.models.analisis_estados import ESTADOS_DIR, NOMBRE_UF
 from src.models.analisis_seccion import CENSO
 from src.models.montecarlo.proyeccion_bancas import ROOT
@@ -44,6 +45,11 @@ CSS_ESTADOS = """
 td.wrap { white-space:normal; }
 .idx td { white-space:nowrap; font-size:8.2pt; padding:.08cm .16cm; }
 .idx th { font-size:7pt; }
+.fig-div { max-height:5.6cm; }
+.fig-cap { max-height:7.4cm; }
+.pag-div table { font-size:8.4pt; } .pag-div td { padding:.09cm .16cm; }
+.pag-div .insight { font-size:8.6pt; line-height:1.34; padding:.18cm .28cm; margin:.16cm 0; }
+.pag-div h3.sub { margin-top:.1cm; }
 .pag-gob table { font-size:8.4pt; } .pag-gob td { padding:.09cm .16cm; }
 .pag-gob .insight { font-size:8.7pt; line-height:1.34; padding:.18cm .28cm; margin:.16cm 0; }
 .pag-gob .fig-uf { max-height:12.8cm; }
@@ -81,6 +87,15 @@ def construir() -> Path:
     if BUILD.exists():
         shutil.rmtree(BUILD)
     shutil.copytree(corrida / "figs", BUILD / "figs")
+    geo = {}
+    for uf in D_:
+        r = GEO_DIR / uf / "resumen.json"
+        if r.exists():
+            geo[uf] = json.loads(r.read_text(encoding="utf-8"))
+            for f in ("divisiones", "capital"):
+                shutil.copy(GEO_DIR / uf / "figs" / f"{f}.svg", BUILD / "figs" / f"{uf}_{f}.svg")
+        else:
+            log.warning("%s: sin capas geoespaciales (correr src.geo.divisiones)", uf)
     if PORTADA.exists():
         shutil.copy(PORTADA, BUILD / "portada.jpg")
     ufs = sorted(D_, key=lambda u: -D_[u]["electores"])
@@ -131,6 +146,8 @@ def construir() -> Path:
               '<p><b>Gobernador.</b> El resultado de 2022, el mapa de los dos primeros por escuela y el voto cruzado: cuánto se '
               'parece el voto a gobernador al voto a presidente en cada escuela. Si hubo segunda vuelta, a dónde fueron los '
               'votantes de los demás candidatos. Y el favorito para 2026 según el modelo estructural.</p>'
+              '<p><b>Divisiones y jurisdicciones.</b> El voto por município, região imediata, zona eleitoral y, en la capital, '
+              'por el área de cada escuela. Cada capa se entrega también en GeoJSON para usar en cualquier mapa.</p>'
               '<p><b>Territorio y mesas.</b> Qué tipos de territorio pesan en el estado, qué explica el voto dentro de él, y las '
               'mesas atípicas: secciones cuyo resultado se aparta mucho del resto de su escuela.</p>'
               '<h3>Mesas atípicas</h3>'
@@ -144,7 +161,7 @@ def construir() -> Path:
               + fuente("Locales agrupados por el perfil censal de su área de influencia (k-medias). Cada capítulo muestra cuánto "
                        "pesa cada tipo en el estado y cómo votó ahí.")
               + "</div></div>")
-    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Tres páginas por estado, con la escuela como unidad",
+    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Cuatro páginas por estado, con la escuela como unidad",
              pie="Unidad: local de votación (escuela). La sección (mesa) se usa para detectar urnas atípicas.")
 
     # ================================================================ capítulos
@@ -269,6 +286,36 @@ def construir() -> Path:
                  titulo="Qué territorio define el voto y qué mesas se apartan",
                  bajada="Tipología nacional de territorios aplicada al estado, y secciones que votan muy distinto que el resto de su escuela.",
                  pie="Mesa atípica: |z| > 4 frente a las demás secciones de la misma escuela (2ª vuelta presidencial 2022).")
+
+        # ---- D · divisiones y jurisdicciones
+        if u in geo:
+            gz = geo[u]; cp = gz["capas"]
+            ri = gz["regioes_intermediarias"][:6]
+            filas_r = [[str(x["nombre"]), f0(x["electores"]), f1(x["lula_2v"]) + " %",
+                        (f1(x["gob_1_pct"]) + " %") if x.get("gob_1_pct") is not None else "—"] for x in ri]
+            ins = []
+            bc = gz.get("bairros_capital")
+            if bc and bc["mas_lula"] and bc["menos_lula"]:
+                ins.append(insight("<b>Barrios de la capital:</b> donde más vota a Lula, "
+                                   + ", ".join(f"{x['nombre']} ({f1(x['lula_2v'])} %)" for x in bc["mas_lula"][:3])
+                                   + "; donde menos, " + ", ".join(f"{x['nombre']} ({f1(x['lula_2v'])} %)" for x in bc["menos_lula"][:3])
+                                   + ". Barrios con 2.000 electores o más."))
+            ins.append(insight("<b>Capas entregadas (GeoJSON y GeoPackage):</b> "
+                               + f"{cp['regioes_intermediarias']['n']} regiões intermediárias, {cp['regioes_imediatas']['n']} imediatas, "
+                               + f"{cp['municipios']['n']} municípios, {cp['distritos']['n']} distritos, "
+                               + (f"{cp['bairros']['n']} barrios, " if 'bairros' in cp else "")
+                               + f"{cp['zonas_eleitorais']['n']} zonas eleitorais (aprox.), {f0(cp['areas_escuelas']['n'])} áreas de escuela, "
+                               + f"{f0(cp['locales']['n'])} escuelas y {f0(gz['secciones'])} mesas con coordenadas."))
+            cuerpo = ('<div class="pag-div">' + fig(f"{u}_divisiones.svg", "fig fig-div")
+                      + '<div class="dos-col"><div>' + fig(f"{u}_capital.svg", "fig fig-cap") + "</div><div>"
+                      + '<h3 class="sub">Regiões intermediárias</h3>'
+                      + tabla(["Región", "Electores", "Lula 2ª v.", f"{nombre(d['gob']['candidatos_1v'][0]['nombre'])} (gob.)"], filas_r,
+                              num=(1, 2, 3))
+                      + "".join(ins) + "</div></div></div>")
+            D.pagina(cuerpo, kicker=f"{u} · {d['nombre'].upper()} · DIVISIONES Y JURISDICCIONES",
+                     titulo="El voto por cada división del estado",
+                     bajada="Lula, 2ª vuelta 2022, por município, região imediata y zona eleitoral; abajo, la capital por área de cada escuela.",
+                     pie="Divisiones del IBGE (malla de setores 2022). Zonas eleitorais y áreas de escuela: aproximadas por cercanía a la escuela.")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Brasil, estado por estado</title>'
             f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}{CSS_ESTADOS}</style></head><body>{"".join(D.paginas)}</body></html>')

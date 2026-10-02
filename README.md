@@ -135,6 +135,9 @@ python -m src.models.analisis_seccion && python -m src.viz.informe_seccion_pdf
 python -m src.etl.extract.tse_extractor --dataset votacion_seccion_uf --ano 2018 2022
 python -m src.etl.transform.votacion_seccion --cargo gobernador --ano 2018 2022
 python -m src.models.analisis_estados && python -m src.viz.informe_estados_pdf
+
+# 5c. Capas geoespaciales por UF (GeoJSON/GeoPackage con resultados) y zips de entrega.
+python -m src.etl.transform.coordenadas_locales && python -m src.geo.divisiones && python -m src.geo.empaquetar
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

@@ -27,3 +27,5 @@ reports/briefs/_build/
 data/processed/electoral/seccion/
 reports/briefs/_build_seccion/
 reports/briefs/_build_estados/
+data/processed/geo/
+reports/geo/

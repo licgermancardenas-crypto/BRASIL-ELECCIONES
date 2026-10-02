@@ -100,3 +100,33 @@ python -m src.viz.informe_estados_pdf                  # -> reports/briefs/ATLAS
   (universidades, cárceles, hospitales) o urnas muy chicas.
 - **Transferencias de terceros por UF:** cuando el tercero sacó menos del 3%
   en la UF, el informe avisa que la estimación es poco precisa.
+
+## Capas geoespaciales por estado (GeoJSON)
+
+```bash
+python -m src.etl.extract.tse_extractor --dataset locales_votacion --ano 2024 2026
+python -m src.etl.transform.coordenadas_locales --ano 2022 --respaldo 2024 2018   # completa coordenadas
+python -m src.geo.divisiones            # capas por UF en data/processed/geo/<UF>/
+python -m src.geo.empaquetar            # un zip por UF en reports/geo/ (fuera de git, ~400 MB)
+```
+
+- **Jurisdicciones:** regiões intermediárias e imediatas, municípios,
+  distritos y bairros. Salen de unir los setores de la malla del Censo 2022,
+  que trae los códigos de cada nivel, con `coverage_union_all` y
+  `coverage_simplify` para que no queden huecos entre vecinos.
+- **Zonas eleitorais y áreas de escuela:** aproximadas. Cada setor va a la
+  escuela más cercana de su município. Es el nivel poligonal más fino y el
+  equivalente del circuito de CABA. Los municípios sin escuelas con
+  coordenadas van a su zona principal.
+- **Coordenadas faltantes:** el archivo 2022 del TSE no trae coordenadas
+  para el 5% del padrón. Se completan con la misma escuela en 2024 o 2018 y,
+  si no, con el centroide del barrio del IBGE (`coord_origen = bairro`,
+  aproximada: no se usa para trazar áreas). Queda sin coordenada el 3,4% del
+  padrón, concentrado en BA (71% con coordenada precisa) y SE (75%). Esas
+  escuelas cuentan en município, región y zona, pero no en distrito, barrio
+  ni área de escuela.
+- **Controles:** en las 27 UF, regiões y zonas suman exactamente lo mismo
+  que municípios (salvo zonas sin ninguna escuela ubicable en BA y ES).
+- **DF:** es un solo município y la malla 2022 no trae sus regiões
+  administrativas. El detalle en el DF lo dan las 19 zonas y las áreas de
+  escuela.
