@@ -47,6 +47,7 @@ td.wrap { white-space:normal; }
 .idx th { font-size:7pt; }
 .fig-grande { max-height:15.4cm; max-width:100%; margin:0 auto; }
 .pag-mapa .cuerpo { display:flex; align-items:center; justify-content:center; }
+.fig-foco { max-height:10.6cm; }
 .fig-div { max-height:5.6cm; }
 .fig-cap { max-height:7.4cm; }
 .pag-div table { font-size:8.4pt; } .pag-div td { padding:.09cm .16cm; }
@@ -89,6 +90,13 @@ def construir() -> Path:
     if BUILD.exists():
         shutil.rmtree(BUILD)
     shutil.copytree(corrida / "figs", BUILD / "figs")
+    from src.viz.mapas_espaciales import ESPACIAL
+    esp_dir = sorted(p.parent for p in ESPACIAL.glob("*/figs_resumen.json"))
+    esp = json.loads((esp_dir[-1] / "figs_resumen.json").read_text(encoding="utf-8")) if esp_dir else {}
+    esp_r = json.loads((esp_dir[-1] / "resumen.json").read_text(encoding="utf-8")) if esp_dir else {}
+    for uf in esp:
+        for f in ("lisa_escuelas", "skater"):
+            shutil.copy(esp_dir[-1] / "figs" / f"{uf}_{f}.svg", BUILD / "figs" / f"{uf}_{f}.svg")
     geo = {}
     for uf in D_:
         r = GEO_DIR / uf / "resumen.json"
@@ -149,6 +157,8 @@ def construir() -> Path:
               'parece el voto a gobernador al voto a presidente en cada escuela. Si hubo segunda vuelta, a dónde fueron los '
               'votantes de los demás candidatos. Y el favorito para 2026 según el modelo estructural.</p>'
               '<p><b>Mapas a página completa.</b> El estado município por município y la capital escuela por escuela.</p>'
+              '<p><b>Focos y regiones.</b> Focos del voto escuela por escuela (LISA) y regiones electorales contiguas (SKATER), '
+              'hechos en R; el detalle de los métodos está en el informe de análisis espacial.</p>'
               '<p><b>Divisiones y jurisdicciones.</b> El voto por município, região imediata, zona eleitoral y, en la capital, '
               'por el área de cada escuela. Cada capa se entrega también en GeoJSON para usar en cualquier mapa.</p>'
               '<p><b>Territorio y mesas.</b> Qué tipos de territorio pesan en el estado, qué explica el voto dentro de él, y las '
@@ -164,7 +174,7 @@ def construir() -> Path:
               + fuente("Locales agrupados por el perfil censal de su área de influencia (k-medias). Cada capítulo muestra cuánto "
                        "pesa cada tipo en el estado y cómo votó ahí.")
               + "</div></div>")
-    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Seis páginas por estado, con la escuela como unidad",
+    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Siete páginas por estado, con la escuela como unidad",
              pie="Unidad: local de votación (escuela). La sección (mesa) se usa para detectar urnas atípicas.")
 
     # ================================================================ capítulos
@@ -333,6 +343,29 @@ def construir() -> Path:
                             + (f", con los {cm.get('bairros')} {cm.get('nivel', '')}." if cm.get("bairros") else "."),
                      pie="Área de influencia: setores censitários más cercanos a cada escuela. Aproximación.",
                      clase="pag-mapa")
+        # ---- F · focos y regiones (R: LISA por escuela, SKATER por município)
+        if u in esp:
+            cu = esp[u]["lisa_escuelas"]; tot = max(sum(cu.values()), 1)
+            sk = esp_r.get("skater", {}).get(u)
+            gwr = esp_r.get("gwr", {}).get("coef_por_uf", {})
+            texto = (f"<b>Focos por escuela:</b> {f0(cu.get('High-High', 0))} escuelas en focos lulistas ({f1(cu.get('High-High', 0) / tot * 100)} %) "
+                     f"y {f0(cu.get('Low-Low', 0))} en focos bolsonaristas ({f1(cu.get('Low-Low', 0) / tot * 100)} %); "
+                     f"{f0(cu.get('High-Low', 0) + cu.get('Low-High', 0))} islas de un bando dentro del otro.")
+            ins = [insight(texto)]
+            if sk:
+                ins.append(insight(f"<b>Regiones electorales (SKATER):</b> {sk['k']} regiones contiguas que votan parecido (el IBGE tiene "
+                                   f"{sk['regioes_imediatas']} regiões imediatas); separan el {sk['ratio_entre_total'] * 100:.0f} % de las "
+                                   "diferencias entre municípios. El número en cada región es su % de Lula."))
+            if gwr and u in gwr.get("alfabetizacion", {}):
+                ins.append(insight(f"<b>Qué pesa acá (GWR):</b> un desvío más de alfabetización mueve {sg(gwr['alfabetizacion'][u])} "
+                                   f"puntos a Lula; de población preta o parda, {sg(gwr['preta_parda'][u])}; de hogares con 2+ baños, "
+                                   f"{sg(gwr['banos_2mas'][u])} (mediana de los municípios del estado)."))
+            cuerpo = ('<div class="dos-col"><div>' + fig(f"{u}_lisa_escuelas.svg", "fig fig-foco") + "</div><div>"
+                      + fig(f"{u}_skater.svg", "fig fig-foco") + "</div></div>" + '<div class="dos-col">' + "".join(ins) + "</div>")
+            D.pagina(cuerpo, kicker=f"{u} · {d['nombre'].upper()} · FOCOS Y REGIONES",
+                     titulo="Dónde se concentra el voto y qué regiones votan parecido",
+                     bajada="Izquierda: focos del voto escuela por escuela (LISA, p < 0,01). Derecha: regiones electorales SKATER sobre los municípios.",
+                     pie="Análisis en R (rgeoda, GWmodel). Rojo: foco lulista; azul: foco bolsonarista; gris: sin patrón significativo.")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Brasil, estado por estado</title>'
             f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}{CSS_ESTADOS}</style></head><body>{"".join(D.paginas)}</body></html>')

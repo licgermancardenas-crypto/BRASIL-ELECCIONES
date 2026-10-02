@@ -68,7 +68,7 @@ def mapa_estado(uf: str) -> None:
     mu = gpd.read_file(d / "municipios.geojson")
     rgi = gpd.read_file(d / "regioes_imediatas.geojson")
     fig, ax = plt.subplots(figsize=FIG)
-    mu.plot(ax=ax, color=colores(mu["lula_2v"]), edgecolor="white", linewidth=0.3)
+    mu.plot(ax=ax, color=colores(mu["lula_2v"]), edgecolor="white", linewidth=0.3, rasterized=True)
     rgi.boundary.plot(ax=ax, color=INK, linewidth=0.9)
     x0, y0, x1, y1 = mu.total_bounds
     rotular(ax, mu, "nombre", 16, 7.5, min_dist=max(x1 - x0, y1 - y0) * 0.06)
@@ -77,7 +77,30 @@ def mapa_estado(uf: str) -> None:
     leyenda(ax, "Lula, 2ª vuelta 2022")
     ax.annotate("Líneas gruesas: regiões imediatas (IBGE)", (0.99, 0.01), xycoords="axes fraction", ha="right",
                 fontsize=7.5, color="#6B6480")
-    fig.savefig(d / "figs" / "estado_grande.svg", format="svg", bbox_inches="tight", facecolor="white")
+    fig.savefig(d / "figs" / "estado_grande.svg", format="svg", bbox_inches="tight", facecolor="white", dpi=200)
+    plt.close(fig)
+
+
+def mapa_divisiones(uf: str) -> None:
+    """Municípios, regiões imediatas y zonas eleitorais lado a lado (versión liviana de la figura de divisiones)."""
+    d = GEO_DIR / uf
+    mu = gpd.read_file(d / "municipios.geojson")
+    rgi = gpd.read_file(d / "regioes_imediatas.geojson")
+    zo = gpd.read_file(d / "zonas_eleitorais.geojson")
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 4.2))
+    for ax, capa, lw, t in ((axes[0], mu, 0.2, f"Municípios ({len(mu)})"), (axes[1], rgi, 0.6, f"Regiões imediatas ({len(rgi)})"),
+                            (axes[2], zo, 0.3, f"Zonas eleitorais ({len(zo)}, aprox.)")):
+        capa.plot(ax=ax, color=colores(capa["lula_2v"]), edgecolor="white", linewidth=lw, rasterized=True)
+        ax.set_axis_off(); ax.set_aspect("equal")
+        ax.set_title(t, fontsize=9, loc="left", color=INK, weight="bold")
+    mu.boundary.plot(ax=axes[2], color=INK, linewidth=0.15, rasterized=True)
+    for _, r in rgi.nlargest(12, "electores").iterrows():
+        q = r.geometry.representative_point()
+        axes[1].annotate(str(r["nombre"])[:16], (q.x, q.y), fontsize=5.5, ha="center", color=INK, path_effects=HALO)
+    fig.legend(handles=[Patch(color=c, label=e) for (_, c), e in zip(CORTES, ETQ)], loc="lower center", ncol=6,
+               fontsize=7.5, frameon=False, bbox_to_anchor=(0.5, -0.04))
+    fig.tight_layout()
+    fig.savefig(d / "figs" / "divisiones.svg", format="svg", bbox_inches="tight", facecolor="white", dpi=200)
     plt.close(fig)
 
 
@@ -96,10 +119,10 @@ def mapa_capital(uf: str, capital_cd: str, figsize=FIG, nombre: str = "capital_g
         if len(dd) >= 5:
             b, nivel = dd, "distritos del IBGE"
     fig, ax = plt.subplots(figsize=figsize)
-    a.plot(ax=ax, color=colores(a["lula_2v"]), edgecolor="white", linewidth=0.15)
+    a.plot(ax=ax, color=colores(a["lula_2v"]), edgecolor="white", linewidth=0.15, rasterized=True)
     if b is not None and len(b):
-        b.boundary.plot(ax=ax, color=INK, linewidth=0.35)
-    ax.scatter(loc.geometry.x, loc.geometry.y, s=1.5, color=INK, alpha=0.45, linewidths=0)
+        b.boundary.plot(ax=ax, color=INK, linewidth=0.35, rasterized=True)
+    ax.scatter(loc.geometry.x, loc.geometry.y, s=1.5, color=INK, alpha=0.45, linewidths=0, rasterized=True)
     if len(loc) > 10:
         x0, x1 = loc.geometry.x.quantile([0.05, 0.95]); y0, y1 = loc.geometry.y.quantile([0.05, 0.95])
         mx, my = (x1 - x0) * 0.25, (y1 - y0) * 0.25
@@ -116,7 +139,7 @@ def mapa_capital(uf: str, capital_cd: str, figsize=FIG, nombre: str = "capital_g
     leyenda(ax, "Lula, 2ª vuelta 2022")
     fig.text(0.5, 0.005, f"Cada polígono: área de influencia de una escuela. Puntos: escuelas. Líneas y nombres: {nivel}.",
              ha="center", fontsize=7.5, color="#6B6480")
-    fig.savefig(d / "figs" / nombre, format="svg", bbox_inches="tight", facecolor="white")
+    fig.savefig(d / "figs" / nombre, format="svg", bbox_inches="tight", facecolor="white", dpi=200)
     plt.close(fig)
     return {"areas": len(a), "escuelas": len(loc), "bairros": 0 if b is None else len(b), "nivel": nivel}
 
@@ -132,6 +155,7 @@ def main() -> None:
         mn = pyogrio.read_dataframe(GEO_DIR / uf / "municipios.geojson", read_geometry=False, columns=["codigo", "nombre"])
         r["capital_nombre"] = str(mn.loc[mn["codigo"] == r["capital_cd"], "nombre"].iloc[0])
         mapa_estado(uf)
+        mapa_divisiones(uf)
         c = mapa_capital(uf, r["capital_cd"])
         mapa_capital(uf, r["capital_cd"], figsize=(6.0, 5.6), nombre="capital.svg", n_rot=10)  # versión chica
         # barrios extremos de la capital (corrige corridas donde la capital era el município con más electores)

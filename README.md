@@ -138,6 +138,10 @@ python -m src.models.analisis_estados && python -m src.viz.informe_estados_pdf
 
 # 5c. Capas geoespaciales por UF (GeoJSON/GeoPackage con resultados) y zips de entrega.
 python -m src.etl.transform.coordenadas_locales && python -m src.geo.divisiones && python -m src.geo.empaquetar
+
+# 5d. Análisis espacial en R (LISA, Gi*, GWR, SKATER, accesibilidad) e informe.
+python -m src.geo.insumos_espaciales && Rscript R/analisis_espacial.R
+python -m src.viz.mapas_espaciales && python -m src.viz.informe_espacial_pdf
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

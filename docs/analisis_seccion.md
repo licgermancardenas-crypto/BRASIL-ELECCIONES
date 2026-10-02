@@ -130,3 +130,38 @@ python -m src.geo.empaquetar            # un zip por UF en reports/geo/ (fuera d
 - **DF:** es un solo município y la malla 2022 no trae sus regiões
   administrativas. El detalle en el DF lo dan las 19 zonas y las áreas de
   escuela.
+
+## Análisis espacial en R (LISA, Gi*, GWR, SKATER, accesibilidad)
+
+Decisión del 2026-10-02: los cuatro análisis, en R. Requiere R 4.6 con sf,
+spdep, rgeoda, GWmodel, spatialreg y jsonlite, instalados en la librería del
+usuario.
+
+```bash
+python -m src.geo.insumos_espaciales      # municípios nacionales + áreas de escuela por UF, con Censo y distancia
+Rscript R/analisis_espacial.R             # -> data/processed/geo/_espacial/<fecha>/
+python -m src.viz.mapas_espaciales        # mapas (paleta Atlas)
+python -m src.viz.informe_espacial_pdf    # informe nacional "Brasil: el voto en el espacio"
+python -m src.geo.mapas_grandes && python -m src.viz.informe_estados_pdf   # páginas por estado
+```
+
+- **LISA:** Moran local sobre el % de Lula en la 2ª vuelta 2022, con vecindad
+  de reina, 999 permutaciones y p < 0,01. Se corre en los municípios del país
+  y, dentro de cada estado, en las áreas de escuela. Moran global por
+  município: 0,88.
+- **Gi\*:** Getis-Ord sobre el cambio del voto PT en la 2ª vuelta entre 2018
+  y 2022, por município.
+- **GWR:** % de Lula sobre alfabetización, preta/parda, 2+ baños, 60+ y
+  urbanización, todas estandarizadas. Kernel bisquare adaptativo con ancho de
+  banda por AICc (74 vecinos). El R² sube de 0,72 (modelo único) a 0,94.
+- **SKATER:** regionalización por estado con k = número de regiões imediatas,
+  sobre Lula 1ª y 2ª vuelta, cambio 2018-2022 y abstención. Se usa el
+  componente conexo principal: las islas sin vecinos (Fernando de Noronha,
+  Ilhabela) quedan fuera porque rompen el algoritmo.
+- **Accesibilidad:** distancia en línea recta de cada setor a su escuela,
+  promedio por habitante. Dos modelos: error espacial en municípios
+  (spatialreg) y mínimos cuadrados con efectos fijos de UF en escuelas.
+  Duplicar la distancia suma 0,4 puntos de abstención en el modelo por
+  escuela y 0,6 en el de municípios.
+- **Peso de los PDF:** los rellenos de los mapas se embeben como imagen de
+  200 dpi (`rasterized=True`); los textos y bordes quedan vectoriales.
