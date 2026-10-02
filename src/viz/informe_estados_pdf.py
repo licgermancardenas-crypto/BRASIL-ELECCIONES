@@ -45,6 +45,8 @@ CSS_ESTADOS = """
 td.wrap { white-space:normal; }
 .idx td { white-space:nowrap; font-size:8.2pt; padding:.08cm .16cm; }
 .idx th { font-size:7pt; }
+.fig-grande { max-height:15.4cm; max-width:100%; margin:0 auto; }
+.pag-mapa .cuerpo { display:flex; align-items:center; justify-content:center; }
 .fig-div { max-height:5.6cm; }
 .fig-cap { max-height:7.4cm; }
 .pag-div table { font-size:8.4pt; } .pag-div td { padding:.09cm .16cm; }
@@ -92,7 +94,7 @@ def construir() -> Path:
         r = GEO_DIR / uf / "resumen.json"
         if r.exists():
             geo[uf] = json.loads(r.read_text(encoding="utf-8"))
-            for f in ("divisiones", "capital"):
+            for f in ("divisiones", "capital", "estado_grande", "capital_grande"):
                 shutil.copy(GEO_DIR / uf / "figs" / f"{f}.svg", BUILD / "figs" / f"{uf}_{f}.svg")
         else:
             log.warning("%s: sin capas geoespaciales (correr src.geo.divisiones)", uf)
@@ -146,6 +148,7 @@ def construir() -> Path:
               '<p><b>Gobernador.</b> El resultado de 2022, el mapa de los dos primeros por escuela y el voto cruzado: cuánto se '
               'parece el voto a gobernador al voto a presidente en cada escuela. Si hubo segunda vuelta, a dónde fueron los '
               'votantes de los demás candidatos. Y el favorito para 2026 según el modelo estructural.</p>'
+              '<p><b>Mapas a página completa.</b> El estado município por município y la capital escuela por escuela.</p>'
               '<p><b>Divisiones y jurisdicciones.</b> El voto por município, região imediata, zona eleitoral y, en la capital, '
               'por el área de cada escuela. Cada capa se entrega también en GeoJSON para usar en cualquier mapa.</p>'
               '<p><b>Territorio y mesas.</b> Qué tipos de territorio pesan en el estado, qué explica el voto dentro de él, y las '
@@ -161,7 +164,7 @@ def construir() -> Path:
               + fuente("Locales agrupados por el perfil censal de su área de influencia (k-medias). Cada capítulo muestra cuánto "
                        "pesa cada tipo en el estado y cómo votó ahí.")
               + "</div></div>")
-    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Cuatro páginas por estado, con la escuela como unidad",
+    D.pagina(cuerpo, kicker="CÓMO LEER LOS CAPÍTULOS", titulo="Seis páginas por estado, con la escuela como unidad",
              pie="Unidad: local de votación (escuela). La sección (mesa) se usa para detectar urnas atípicas.")
 
     # ================================================================ capítulos
@@ -192,6 +195,13 @@ def construir() -> Path:
         D.pagina(cuerpo, kicker=f"{u} · {d['nombre'].upper()} · PANORAMA", titulo=titulo_panorama(d),
                  bajada="Segunda vuelta presidencial 2022: % de Lula en cada escuela.",
                  pie=f"Municípios con más electores del estado. vs 2018: puntos de Lula 2022 respecto de Haddad 2018.")
+        if u in geo:
+            D.pagina(fig(f"{u}_estado_grande.svg", "fig fig-grande"), kicker=f"{u} · {d['nombre'].upper()} · MAPA DEL ESTADO",
+                     titulo=f"{d['nombre']} município por município",
+                     bajada=f"Lula, 2ª vuelta presidencial 2022, en cada uno de los {geo[u]['capas']['municipios']['n']} municípios; "
+                            "líneas gruesas: regiões imediatas.",
+                     pie="Malla de municípios: IBGE (Censo 2022). Votos válidos, escrutinio oficial del TSE por sección.",
+                     clase="pag-mapa")
 
         # ---- B · gobernador
         c1 = g["candidatos_1v"]; w = g["ganador"]
@@ -316,6 +326,13 @@ def construir() -> Path:
                      titulo="El voto por cada división del estado",
                      bajada="Lula, 2ª vuelta 2022, por município, região imediata y zona eleitoral; abajo, la capital por área de cada escuela.",
                      pie="Divisiones del IBGE (malla de setores 2022). Zonas eleitorais y áreas de escuela: aproximadas por cercanía a la escuela.")
+            cm = gz.get("capital_mapa", {})
+            D.pagina(fig(f"{u}_capital_grande.svg", "fig fig-grande"), kicker=f"{u} · {d['nombre'].upper()} · LA CAPITAL",
+                     titulo=f"{gz.get('capital_nombre', 'La capital')}, escuela por escuela",
+                     bajada=f"Lula, 2ª vuelta 2022, en el área de influencia de cada una de sus {f0(cm.get('escuelas', 0))} escuelas"
+                            + (f", con los {cm.get('bairros')} {cm.get('nivel', '')}." if cm.get("bairros") else "."),
+                     pie="Área de influencia: setores censitários más cercanos a cada escuela. Aproximación.",
+                     clase="pag-mapa")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Brasil, estado por estado</title>'
             f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}{CSS_ESTADOS}</style></head><body>{"".join(D.paginas)}</body></html>')

@@ -70,6 +70,12 @@ NIVELES = {
     "regioes_intermediarias": ("CD_RGINT", "NM_RGINT", 0.005),
 }
 TOL_BAIRRO, TOL_ZONA = 0.0003, 0.001
+# Capitales (código IBGE): el município con más electores no siempre es la capital (SC, ES)
+CAPITALES = {"AC": "1200401", "AL": "2704302", "AM": "1302603", "AP": "1600303", "BA": "2927408", "CE": "2304400",
+             "DF": "5300108", "ES": "3205309", "GO": "5208707", "MA": "2111300", "MG": "3106200", "MS": "5002704",
+             "MT": "5103403", "PA": "1501402", "PB": "2507507", "PE": "2611606", "PI": "2211001", "PR": "4106902",
+             "RJ": "3304557", "RN": "2408102", "RO": "1100205", "RR": "1400100", "RS": "4314902", "SC": "4205407",
+             "SE": "2800308", "SP": "3550308", "TO": "1721000"}
 COLS_MALLA = ["CD_SETOR", "CD_MUN", "NM_MUN", "CD_DIST", "NM_DIST", "CD_BAIRRO", "NM_BAIRRO", "CD_RGI", "NM_RGI",
               "CD_RGINT", "NM_RGINT", "AREA_KM2", "v0001"]
 CORTES = [(0.3, "#1C5CAB"), (0.4, "#5598E7"), (0.5, "#B7D3F6"), (0.6, "#F6B9B8"), (0.7, "#EA7372"), (1.01, "#B42322")]
@@ -294,7 +300,7 @@ def procesar_uf(uf: str, l22: pd.DataFrame, l18: pd.DataFrame, censo: pd.DataFra
         g.to_file(gpkg, layer=nombre, driver="GPKG")
         resumen["capas"][nombre] = {"n": int(len(g)), "mb": round((out / f"{nombre}.geojson").stat().st_size / 1e6, 1)}
     resumen["secciones"] = int(len(sec))
-    capital = mu.sort_values("electores", ascending=False)["codigo"].iloc[0]
+    capital = CAPITALES[uf]
     resumen["capital_cd"] = capital
     figuras(uf, capas, out, capital)
     # tablas para el informe
