@@ -36,6 +36,12 @@ tse:
         # "_BR"). Los archivos por UF traen todos los cargos (SP: 900 MB).
         ruta: "votacao_secao/votacao_secao_{ano}_BR.zip"
         carpeta: "votacion_seccion"
+      votacion_seccion_uf:
+        # Votos por seção, TODOS los cargos de una UF (gobernador, senado,
+        # diputados; presidente también). 2018+2022: ~5 GB (SP 900 MB en 2022).
+        ruta: "votacao_secao/votacao_secao_{ano}_{uf}.zip"
+        carpeta: "votacion_seccion_uf"
+        por_uf: true
       locales_votacion:
         # Locais de votação con dirección y coordenadas (lat/long) y sus
         # seções: es lo que permite ubicar cada sección en el mapa.

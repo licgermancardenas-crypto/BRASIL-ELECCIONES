@@ -15,6 +15,7 @@ placeholders de 1 byte para datasets todavía no liberados).
 Uso:
     python -m src.etl.extract.tse_extractor --dataset resultados --ano 2022
     python -m src.etl.extract.tse_extractor --dataset encuestas_registradas --ano 2018 2022 2026
+    python -m src.etl.extract.tse_extractor --dataset votacion_seccion_uf --ano 2022 --uf SP RJ
 """
 from __future__ import annotations
 
@@ -64,15 +65,19 @@ def _validar_zip(path: Path) -> dict:
     return {"archivos_internos": csvs}
 
 
-def carpeta_dataset(dataset: str, ano: int) -> Path:
+UFS = ["AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
+       "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"]
+
+
+def carpeta_dataset(dataset: str, ano: int, uf: str | None = None) -> Path:
     carpeta = cargar_config()["tse"]["cdn"]["datasets"][dataset]["carpeta"]
-    return RAW_DIR / carpeta / str(ano)
+    return RAW_DIR / carpeta / str(ano) / (uf or "")
 
 
-def ultima_version(dataset: str, ano: int) -> Path:
-    """Ruta al zip de la última descarga válida de (dataset, año)."""
+def ultima_version(dataset: str, ano: int, uf: str | None = None) -> Path:
+    """Ruta al zip de la última descarga válida de (dataset, año[, UF])."""
     try:
-        return ultima_version_en(carpeta_dataset(dataset, ano))
+        return ultima_version_en(carpeta_dataset(dataset, ano, uf))
     except FileNotFoundError:
         raise FileNotFoundError(
             f"No hay descargas de {dataset} {ano} — correr antes "
@@ -80,14 +85,15 @@ def ultima_version(dataset: str, ano: int) -> Path:
         ) from None
 
 
-def descargar_dataset(dataset: str, ano: int, timeout: int = 120, forzar: bool = False) -> Path | None:
+def descargar_dataset(dataset: str, ano: int, timeout: int = 120, forzar: bool = False,
+                      uf: str | None = None) -> Path | None:
     cfg = cargar_config()["tse"]["cdn"]
-    ruta = cfg["datasets"][dataset]["ruta"].format(ano=ano)
+    ruta = cfg["datasets"][dataset]["ruta"].format(ano=ano, uf=uf)
     return descargar_versionado(
         url=f"{cfg['base_url']}/{ruta}",
-        base=carpeta_dataset(dataset, ano),
+        base=carpeta_dataset(dataset, ano, uf),
         nombre=Path(ruta).name,
-        meta={"dataset": dataset, "ano": ano},
+        meta={"dataset": dataset, "ano": ano, **({"uf": uf} if uf else {})},
         validar=_validar_zip,
         timeout=timeout,
         forzar=forzar,
@@ -98,13 +104,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Extractor de datos abertos do TSE (CDN)")
     parser.add_argument("--dataset", required=True, nargs="+", choices=datasets_disponibles())
     parser.add_argument("--ano", required=True, type=int, nargs="+")
+    parser.add_argument("--uf", nargs="+", help="para datasets por UF (default: las 27)")
     args = parser.parse_args()
 
     fallidos = []
+    datasets = cargar_config()["tse"]["cdn"]["datasets"]
     for dataset in args.dataset:
         for ano in args.ano:
-            if descargar_dataset(dataset, ano) is None:
-                fallidos.append(f"{dataset} {ano}")
+            for uf in (args.uf or UFS) if datasets[dataset].get("por_uf") else [None]:
+                if descargar_dataset(dataset, ano, timeout=600, uf=uf) is None:
+                    fallidos.append(f"{dataset} {ano} {uf or ''}")
     if fallidos:
         log.warning("No disponibles / inválidos: %s", ", ".join(fallidos))
 

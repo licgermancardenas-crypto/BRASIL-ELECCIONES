@@ -435,6 +435,7 @@ def bloque_censo(S: Salida, l22: pd.DataFrame, seed: int) -> None:
     # Tipología: k-medias sobre el Censo estandarizado
     km = KMeans(4, n_init=30, random_state=seed).fit(Z)
     g["tipo"] = km.labels_
+    g[k + ["tipo"]].to_parquet(S.dir / "tipos_locales.parquet", index=False)  # lo usa src.models.analisis_estados
     perfiles = g.groupby("tipo").apply(lambda x: pd.Series({
         "locales": len(x), "electores": x["aptos"].sum(), "lula": x["pt_2"].sum() / x["validos_2"].sum() * 100,
         **{v: np.average(x[v], weights=x["aptos"]) * 100 for v, _ in CENSO}}), include_groups=False)

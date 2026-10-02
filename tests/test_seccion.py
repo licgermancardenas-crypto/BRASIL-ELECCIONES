@@ -31,3 +31,10 @@ def test_grupos_por_seccion_reparte_todos_los_votos():
     r = g.iloc[0]
     assert (r["pt"], r["bolsonaro"], r["ciro"], r["otros"], r["blanco_nulo"]) == (100, 80, 10, 5, 5)
     assert r[["pt", "bolsonaro", "ciro", "otros", "blanco_nulo"]].sum() == r["comparecencia"]
+
+
+def test_titulo_del_panorama_segun_el_voto():
+    from src.viz.informe_estados_pdf import titulo_panorama
+    assert titulo_panorama({"nombre": "Bahia", "lula_2v": 72.1}) == "Bahia, bastión de Lula"
+    assert titulo_panorama({"nombre": "Minas Gerais", "lula_2v": 50.2}) == "Minas Gerais, un estado partido al medio"
+    assert titulo_panorama({"nombre": "Acre", "lula_2v": 29.7}) == "Acre, territorio bolsonarista"

@@ -130,6 +130,11 @@ python -m src.etl.extract.censo_extractor
 python -m src.etl.transform.votacion_seccion && python -m src.etl.transform.locales_votacion
 python -m src.etl.transform.base_locales && python -m src.geo.censo_locales
 python -m src.models.analisis_seccion && python -m src.viz.informe_seccion_pdf
+
+# 5b. Estado por estado: presidente + gobernador mesa por mesa, PDF de 27 capítulos.
+python -m src.etl.extract.tse_extractor --dataset votacion_seccion_uf --ano 2018 2022
+python -m src.etl.transform.votacion_seccion --cargo gobernador --ano 2018 2022
+python -m src.models.analisis_estados && python -m src.viz.informe_estados_pdf
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

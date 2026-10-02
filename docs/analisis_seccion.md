@@ -71,3 +71,32 @@ python -m src.viz.informe_seccion_pdf                 # informe PDF
 - Coordenadas faltantes: 7% de los locales en 2022 y 20% en 2018. Los locales
   sin coordenadas no entran al mapa ni al cruce con el Censo.
 - La comparación 2018–2022 es por município, no por local.
+
+## Estado por estado (presidente + gobernador)
+
+Decisión del 2026-10-02: presidente y gobernador 2018/2022, un solo PDF con
+27 capítulos.
+
+```bash
+python -m src.etl.extract.tse_extractor --dataset votacion_seccion_uf --ano 2018 2022   # ~5 GB, todos los cargos por UF
+python -m src.etl.transform.votacion_seccion --cargo gobernador --ano 2018 2022
+python -m src.models.analisis_estados                  # -> estados/<fecha>/datos.json + figs/
+python -m src.viz.informe_estados_pdf                  # -> reports/briefs/ATLAS_Brasil_Estado_por_Estado_<fecha>.pdf
+```
+
+- **Gobernador por escuela:** votos de los dos primeros de la 1ª vuelta,
+  otros, blanco/nulo y abstención, en cada vuelta. Los resultados por UF
+  coinciden con los oficiales.
+- **Voto cruzado:** % de escuelas donde el bando que gana a presidente no es
+  el que gana a gobernador. Se calcula solo si los dos primeros a gobernador
+  se reparten los bandos presidenciales: correlaciones con el % de Lula por
+  escuela de signo opuesto y las dos con |r| ≥ 0,2. Si no, no se calcula (AM,
+  RO, RR, RS en 2022).
+- **Mesas atípicas:** z = (% Lula en la sección − % en el resto de su escuela)
+  / sqrt(azar binomial + tau²), donde tau² es la variación normal entre mesas
+  de una misma escuela, estimada en todo el país (2,2 pp). Se marca atípica
+  con |z| > 4: son 584 de 422.400 secciones en escuelas con 3 mesas o más.
+  Atípica no quiere decir irregular: suelen ser secciones especiales
+  (universidades, cárceles, hospitales) o urnas muy chicas.
+- **Transferencias de terceros por UF:** cuando el tercero sacó menos del 3%
+  en la UF, el informe avisa que la estimación es poco precisa.
