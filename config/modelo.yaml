@@ -112,3 +112,34 @@ encuestas:
   # como incertidumbre (media 0); el sesgo con corrección se reporta como
   # sensibilidad. Con 2 elecciones no hay base para corregirlo de oficio.
   corregir_sesgo_historico: false
+
+seccion:
+  # Análisis mesa por mesa (src/models/analisis_seccion.py). Decisión del
+  # 2026-10-01: presidencial nacional 2018/2022, unidad = local de votação
+  # (equivalente de los circuitos de CABA), cruzado con el Censo 2022.
+  # Agrupación de opciones de voto por número de candidato (TSE).
+  grupos:
+    2018:
+      1: {pt: [13], bolsonaro: [17], ciro: [12], centro: [45, 15, 30, 19, 18]}
+      2: {pt: [13], bolsonaro: [17]}
+    2022:
+      1: {pt: [13], bolsonaro: [22], ciro: [12], tebet: [15]}
+      2: {pt: [13], bolsonaro: [22]}
+  # Votos que no son de ningún grupo de arriba -> "otros"; 95 y 96 -> "blanco_nulo";
+  # padrón - comparecencia -> "abstencion" (recortada en 0: ~1% de secciones
+  # recibe más votantes que su padrón, por voto en tránsito).
+  blanco_nulo: [95, 96]
+  # Locales con menos electores que esto quedan fuera de regresiones y mapas
+  # (son urnas chicas: presos, aldeas; su % es muy ruidoso).
+  min_aptos_local: 100
+  # Transferencias entre vueltas: regresión ecológica con restricciones
+  # (proporciones >= 0 que suman 1 por fila), estimada por UF y ponderada
+  # por electores.
+  transferencias_por: uf
+  random_seed: 2026
+  # Implicancias 2026: a qué tipo de votante 2022 se parece el de cada tercero
+  # (para aplicarle la matriz de transferencias 1ª -> 2ª vuelta de 2022).
+  # Cury (Avante, base del gobierno) ~ Ciro; Caiado (PSD, centro-derecha) ~
+  # Tebet; Zema (Novo) y Santos (Missão) ~ "otros" 2022 (D'Avila/Novo,
+  # Soraya, Kelmon: derecha no bolsonarista). Supuesto, no dato.
+  analogia_2026: {cury: ciro, caiado: tebet, zema: otros, renan_santos: otros, otros: otros}

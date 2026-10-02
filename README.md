@@ -122,6 +122,14 @@ python -m src.etl.extract.wikipedia_extractor --ano 2018 2022 2026
 python -m src.etl.transform.encuestas_resultados
 python -m src.models.agregacion_encuestas
 python -m src.models.montecarlo.proyeccion_presidencial_encuestas
+
+# 5. Mesa por mesa: presidente 2018/2022 por sección (~470 mil), agregado por
+#    local de votación y cruzado con el Censo 2022 por setor. Ver docs/analisis_seccion.md.
+python -m src.etl.extract.tse_extractor --dataset votacion_seccion_presidente locales_votacion --ano 2018 2022
+python -m src.etl.extract.censo_extractor
+python -m src.etl.transform.votacion_seccion && python -m src.etl.transform.locales_votacion
+python -m src.etl.transform.base_locales && python -m src.geo.censo_locales
+python -m src.models.analisis_seccion && python -m src.viz.informe_seccion_pdf
 ```
 
 ## Fuentes (resumen — detalle completo en `config/fuentes.yaml`)

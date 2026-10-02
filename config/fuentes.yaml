@@ -31,6 +31,16 @@ tse:
         # Bancas en disputa por cargo y UF (Câmara, Senado, asambleas)
         ruta: "consulta_vagas/consulta_vagas_{ano}.zip"
         carpeta: "vagas"
+      votacion_seccion_presidente:
+        # Votos por seção eleitoral, solo PRESIDENTE, todo el país (archivo
+        # "_BR"). Los archivos por UF traen todos los cargos (SP: 900 MB).
+        ruta: "votacao_secao/votacao_secao_{ano}_BR.zip"
+        carpeta: "votacion_seccion"
+      locales_votacion:
+        # Locais de votação con dirección y coordenadas (lat/long) y sus
+        # seções: es lo que permite ubicar cada sección en el mapa.
+        ruta: "eleitorado_locais_votacao/eleitorado_local_votacao_{ano}.zip"
+        carpeta: "locales_votacion"
       padron:
         ruta: "perfil_eleitorado/perfil_eleitorado_{ano}.zip"
         carpeta: "padron"
@@ -69,6 +79,19 @@ ibge:
     setores_censitarios: "malha_de_setores_censitarios/censo_2022"
     municipios: "malha_municipal"
     epsg: 4674  # SIRGAS 2000
+  censo_2022_setores:
+    # Censo 2022, agregados por setor censitário (todo Brasil) y malla de
+    # setores en GeoPackage (EPSG:4674). Insumo del análisis por sección.
+    base_url: "https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios"
+    archivos:
+      malla_setores: "malha_com_atributos/setores/gpkg/BR/BR_setores_CD2022.gpkg"
+      basico: "Agregados_por_Setor_csv/Agregados_por_setores_basico_BR_20260520.zip"
+      alfabetizacion: "Agregados_por_Setor_csv/Agregados_por_setores_alfabetizacao_BR.zip"
+      demografia: "Agregados_por_Setor_csv/Agregados_por_setores_demografia_BR.zip"
+      color_raza: "Agregados_por_Setor_csv/Agregados_por_setores_cor_ou_raca_BR.zip"
+      domicilio1: "Agregados_por_Setor_csv/Agregados_por_setores_caracteristicas_domicilio1_BR.zip"
+      domicilio2: "Agregados_por_Setor_csv/Agregados_por_setores_caracteristicas_domicilio2_BR_20250417.zip"
+      diccionario: "dicionario_de_dados_agregados_por_setores_censitarios_20260520.xlsx"
   localidades_api:
     # Lista oficial de municípios con código IBGE (7 dígitos) y jerarquía
     # regional. Fuente primaria para la tabla de correspondencia TSE↔IBGE.
