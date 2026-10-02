@@ -6,9 +6,13 @@ GeoPackage) a data/raw/ibge/censo_2022/<archivo>/<fecha_utc>/, versionado
 con manifest.json como el resto de raw/. URLs en config/fuentes.yaml
 (ibge.censo_2022_setores).
 
+La malla de setores se baja por UF (data/raw/ibge/censo_2022/malla_setores_uf/<UF>/...):
+27 archivos chicos en lugar de uno nacional de 1,5 GB.
+
 Uso:
-    python -m src.etl.extract.censo_extractor                 # todos
-    python -m src.etl.extract.censo_extractor --archivo basico malla_setores
+    python -m src.etl.extract.censo_extractor --archivo basico demografia   # agregados
+    python -m src.etl.extract.censo_extractor --malla-uf                    # malla, las 27 UF
+    python -m src.etl.extract.censo_extractor --malla-uf SP RJ
 """
 from __future__ import annotations
 
@@ -52,6 +56,18 @@ def ultima_version(archivo: str) -> Path:
     return ultima_version_en(RAW_DIR / archivo)
 
 
+def ultima_malla_uf(uf: str) -> Path:
+    return ultima_version_en(RAW_DIR / "malla_setores_uf" / uf)
+
+
+def descargar_malla_uf(uf: str) -> Path | None:
+    cfg = _config()
+    ruta = cfg["malla_setores_uf"].format(uf=uf)
+    return descargar_versionado(f"{cfg['base_url']}/{ruta}", RAW_DIR / "malla_setores_uf" / uf, Path(ruta).name,
+                                meta={"dataset": "censo_2022_malla_setores", "uf": uf, "ano": 2022}, validar=_validar,
+                                timeout=600)
+
+
 def descargar(archivo: str) -> Path | None:
     cfg = _config()
     ruta = cfg["archivos"][archivo]
@@ -63,8 +79,16 @@ def descargar(archivo: str) -> Path | None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--archivo", nargs="+", choices=list(_config()["archivos"]))
+    parser.add_argument("--malla-uf", nargs="*", metavar="UF", help="sin UF: las 27")
     args = parser.parse_args()
-    for a in args.archivo or list(_config()["archivos"]):
+    if args.malla_uf is not None:
+        faltan = []
+        for uf in args.malla_uf or _config()["ufs"]:
+            if descargar_malla_uf(uf) is None:
+                faltan.append(uf)
+        if faltan:
+            log.warning("Malla sin descargar: %s", ", ".join(faltan))
+    for a in args.archivo or ([] if args.malla_uf is not None else [a for a in _config()["archivos"] if a != "malla_setores"]):
         descargar(a)
 
 

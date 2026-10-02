@@ -92,6 +92,10 @@ ibge:
       domicilio1: "Agregados_por_Setor_csv/Agregados_por_setores_caracteristicas_domicilio1_BR.zip"
       domicilio2: "Agregados_por_Setor_csv/Agregados_por_setores_caracteristicas_domicilio2_BR_20250417.zip"
       diccionario: "dicionario_de_dados_agregados_por_setores_censitarios_20260520.xlsx"
+    # Misma malla partida por UF (27 archivos chicos): se usa esta para no
+    # cargar 1,5 GB de una vez (el 2026-10-02 la descarga nacional se cortó por memoria).
+    malla_setores_uf: "malha_com_atributos/setores/gpkg/UF/{uf}/{uf}_setores_CD2022.gpkg"
+    ufs: [AC, AL, AM, AP, BA, CE, DF, ES, GO, MA, MG, MS, MT, PA, PB, PE, PI, PR, RJ, RN, RO, RR, RS, SC, SE, SP, TO]
   localidades_api:
     # Lista oficial de municípios con código IBGE (7 dígitos) y jerarquía
     # regional. Fuente primaria para la tabla de correspondencia TSE↔IBGE.

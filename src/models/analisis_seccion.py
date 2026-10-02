@@ -380,7 +380,7 @@ def bloque_abstencion(S: Salida, l22: pd.DataFrame) -> None:
     ax.set_xticks(x, [f"{d[k]['lula']:.0f} %" for k in range(5)], fontsize=8.5)
     ax.set_xlabel("Locales agrupados por % de Lula en la 2ª vuelta (quintiles)", fontsize=8.5)
     ax.set_ylabel("% de abstención", fontsize=8.5)
-    ax.legend(fontsize=8, frameon=False)
+    ax.legend(fontsize=8, frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 1.0))
     limpiar(ax)
     S.fig(fig, "abstencion.svg")
 

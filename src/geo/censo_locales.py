@@ -26,7 +26,8 @@ Input:  data/raw/ibge/censo_2022/* (src.etl.extract.censo_extractor)
 Output: data/processed/electoral/seccion/locales_censo_2022.parquet
 
 Uso:
-    python -m src.geo.censo_locales [--malla otra_malla.gpkg]   # --malla: para probar con una UF
+    python -m src.geo.censo_locales                    # las 27 UF (malla por UF en raw/)
+    python -m src.geo.censo_locales --malla AC.gpkg    # para probar con una UF
 """
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
 
-from src.etl.extract.censo_extractor import ultima_version
+from src.etl.extract.censo_extractor import _config as config_censo, ultima_malla_uf, ultima_version
 from src.etl.transform.base_locales import salida as salida_locales
 from src.models.analisis_seccion import LOCALES_CENSO
 
@@ -64,7 +65,9 @@ def leer_conteos() -> pd.DataFrame:
         cols = sorted({c for cs in conteos.values() for c in cs})
         with zipfile.ZipFile(ultima_version(archivo)) as z:
             with z.open(next(n for n in z.namelist() if n.lower().endswith(".csv"))) as f:
-                d = pd.read_csv(f, sep=";", dtype=str, encoding="latin1")
+                # Solo la clave y las columnas usadas: el CSV de alfabetización tiene ~360 columnas
+                d = pd.read_csv(f, sep=";", dtype=str, encoding="latin1",
+                                usecols=lambda c: c in cols or c.lower() in ("cd_setor", "setor"))
         clave = next(c for c in d.columns if c.lower() in ("cd_setor", "setor"))
         num = d[cols].apply(lambda s: pd.to_numeric(s.str.replace(",", "."), errors="coerce")).fillna(0)  # "X" = dato suprimido
         out = pd.DataFrame({k: num[cs].sum(axis=1) for k, cs in conteos.items()})
@@ -74,9 +77,15 @@ def leer_conteos() -> pd.DataFrame:
     return pd.concat(partes, axis=1).fillna(0)
 
 
-def puntos_setores(malla: Path) -> pd.DataFrame:
+def puntos_setores(mallas: list[Path]) -> pd.DataFrame:
+    """Punto interior de cada setor. Una UF por vez: los polígonos no quedan en memoria."""
+    return pd.concat([_puntos(m) for m in mallas], ignore_index=True)
+
+
+def _puntos(malla: Path) -> pd.DataFrame:
     g = gpd.read_file(malla, columns=["CD_SETOR", "CD_MUN", "SITUACAO"])
     p = g.geometry.representative_point()
+    log.info("Malla %s: %s setores", malla.name, f"{len(g):,}")
     return pd.DataFrame({"cd_setor": g["CD_SETOR"].astype(str), "cd_mun": g["CD_MUN"].astype(int),
                          "urbano": g["SITUACAO"].str.lower().str.startswith("urban").astype(float),
                          "lon": p.x.to_numpy(), "lat": p.y.to_numpy()})
@@ -98,10 +107,10 @@ def asignar(setores: pd.DataFrame, locales: pd.DataFrame) -> pd.Series:
     return asign
 
 
-def construir(malla: Path) -> pd.DataFrame:
+def construir(mallas: list[Path]) -> pd.DataFrame:
     locales = pd.read_parquet(salida_locales(2022))
     locales = locales[locales["uf"] != "ZZ"].reset_index(drop=True)
-    setores = puntos_setores(malla)
+    setores = puntos_setores(mallas)
     log.info("Malla: %s setores", f"{len(setores):,}")
     conteos = leer_conteos()
     setores = setores.join(conteos, on="cd_setor")
@@ -132,9 +141,21 @@ def construir(malla: Path) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--malla", type=Path, help="GeoPackage de setores (default: malla nacional en raw/)")
+    parser.add_argument("--malla", type=Path, nargs="+", help="GeoPackages de setores (default: las 27 UF en raw/)")
     args = parser.parse_args()
-    construir(args.malla or ultima_version("malla_setores"))
+    if args.malla:
+        mallas = args.malla
+    else:
+        mallas, faltan = [], []
+        for uf in config_censo()["ufs"]:
+            try:
+                mallas.append(ultima_malla_uf(uf))
+            except FileNotFoundError:
+                faltan.append(uf)
+        if faltan:
+            raise SystemExit(f"Falta la malla de {', '.join(faltan)}: correr "
+                             "python -m src.etl.extract.censo_extractor --malla-uf " + " ".join(faltan))
+    construir(mallas)
 
 
 if __name__ == "__main__":
