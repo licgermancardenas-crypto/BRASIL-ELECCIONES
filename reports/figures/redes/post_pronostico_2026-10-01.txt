@@ -1,0 +1,15 @@
+Brasil vota hoy y nuestro modelo marca un empate técnico: Lula 44,1% y Flávio Bolsonaro 41,6% de los votos válidos.
+
+La diferencia es de 2,5 puntos, por debajo del error típico de las encuestas brasileñas en 2018 y 2022 (±4,5 pp). Por eso, con los datos de hoy, no se puede decir quién sale primero.
+
+Lo que sí es casi seguro es el balotaje. En el 94% de las 10.000 simulaciones nadie pasa el 50% y la elección se define el 25 de octubre entre Lula y Flávio. Ahí la probabilidad de ganar está pareja: Flávio 54%, Lula 46%.
+
+Un riesgo va en una sola dirección. En 2018 y 2022, las encuestas subestimaron al candidato bolsonarista en todas las mediciones previas a la 1ª vuelta, por 4 a 6 puntos. Si eso se repite, Flávio sube a 86%. Esta noche se va a ver cuál de los dos escenarios era el correcto.
+
+El mapa es el punto de partida: el 2º turno de 2022 por municipio. El Nordeste votó a Lula (rojo) y el Sur y el Centro-Oeste, a Bolsonaro (azul). Esa vez la diferencia fue de 1,8 puntos.
+
+¿Qué esperás para esta noche: balotaje o sorpresa en primera vuelta?
+
+Fuente: Atlas Analytics, agregador de encuestas presidenciales y simulación Montecarlo (corte 1/10/2026); TSE, resultados 2022.
+
+#AtlasAnalytics #Brasil2026 #EleiçõesBrasil #Elecciones #DataIntelligence #DataViz
