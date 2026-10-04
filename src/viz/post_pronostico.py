@@ -441,6 +441,92 @@ def armar_resultado(res, conteo, mun, salida, ancho=860):
     return salida
 
 
+# Ganador en Minas Gerais en la 1ª vuelta (o vuelta única) y presidente electo.
+# Fuentes: Wikipedia pt (1989-2010, por UF), Gazeta do Povo (2014), FPA (2002),
+# TSE por sección en este repo (2018, 2022). Verificado el 4/10/2026.
+MINAS_HISTORIA = [
+    (1989, "Collor"), (1994, "FHC"), (1998, "FHC"), (2002, "Lula"), (2006, "Lula"),
+    (2010, "Dilma"), (2014, "Dilma"), (2018, "Bolsonaro"), (2022, "Lula"),
+]
+
+
+def armar_minas(conteo, mun, salida, ancho=650):
+    """La regla de Minas: quien gana Minas en 1ª vuelta termina presidente."""
+    im = fondo().convert("RGBA")
+    mg = mun[mun.uf == "MG"]
+    mapa, glow = render_mapa(mg, ancho, columna="lula_2026")
+    mx, my = W - mapa.width - 34, 440
+    _halo(im, glow, (mx, my), radio=18)
+    im.alpha_composite(mapa, (mx, my))
+    im = grano(im.convert("RGB"), 6).convert("RGBA")
+    d = ImageDraw.Draw(im, "RGBA")
+
+    yb = 92
+    d.rectangle([SAFE_X, yb - 13, SAFE_X + 3, yb + 13], fill=VIOLETA)
+    track(d, (SAFE_X + 20, yb), "BRASIL 2026 · LA REGLA DE MINAS", _f(F_DATOS, 21), NEON, 0.22, "m")
+    lg = Image.open(LOGO_H).convert("RGBA")
+    lg = lg.resize((round(lg.width * 34 / lg.height), 34), Image.LANCZOS)
+    im.alpha_composite(lg, (W - SAFE_X - lg.width, yb - lg.height // 2))
+    d.line([(SAFE_X, yb + 40), (W - SAFE_X, yb + 40)], fill=(0xC4, 0x0B, 0xFF, 70))
+
+    y = 168
+    for ln in ("QUIEN GANA MINAS,", "GANA BRASIL"):
+        track(d, (SAFE_X, y), ln, _f(F_DISPLAY, 84), BLANCO, -0.02, "a")
+        y += 92
+    d.text((SAFE_X, y + 12), "Desde 1989, el ganador de Minas Gerais en 1ª vuelta",
+           font=_f(F_TEXTO, 25), fill=TEXTO, anchor="la")
+    d.text((SAFE_X, y + 46), "siempre terminó siendo presidente.", font=_f(F_TEXTO, 25), fill=TEXTO, anchor="la")
+
+    # --- columna izquierda: la serie
+    y = 470
+    f_an, f_nm = _f(F_DATOS_B, 24), _f(F_TEXTO, 26)
+    track(d, (SAFE_X, y), "GANÓ MINAS → PRESIDENTE", _f(F_DATOS, 17), LILA, 0.16, "a")
+    y += 40
+    paso = 50
+    for anio, nombre in MINAS_HISTORIA:
+        d.text((SAFE_X, y), str(anio), font=f_an, fill=(0xB8, 0xA4, 0xCC), anchor="la")
+        d.text((SAFE_X + 86, y - 2), nombre, font=f_nm, fill=BLANCO, anchor="la")
+        d.text((SAFE_X + 262, y - 2), "✓", font=_f(r"C:\Windows\Fonts\seguisym.ttf", 26), fill=NEON, anchor="la")
+        y += paso
+    d.rectangle([SAFE_X - 12, y - 12, SAFE_X + 300, y + 40], outline=BOLSO, width=2)
+    d.text((SAFE_X, y), "2026", font=f_an, fill=BOLSO, anchor="la")
+    d.text((SAFE_X + 86, y - 2), "Flávio", font=_f(F_DISPLAY, 26), fill=BOLSO, anchor="la")
+    d.text((SAFE_X + 262, y - 4), "?", font=_f(F_DISPLAY, 30), fill=BOLSO, anchor="la")
+    w = track(d, (SAFE_X - 4, y + 60), "9", _f(F_DISPLAY, 96), NEON, -0.02, "a")
+    d.text((SAFE_X + w + 10, y + 100), "de 9", font=_f(F_DISPLAY, 44), fill=NEON, anchor="la")
+
+    # --- bajo el mapa: Minas hoy
+    r = conteo["por_uf"]["mg"]
+    v = r["votos"]
+    t = sum(v.values())
+    pf, pl = 100 * v["flavio_bolsonaro"] / t, 100 * v["lula"] / t
+    xl, xr = 470, W - SAFE_X
+    y = 1004
+    track(d, (xl, y), f"MINAS HOY · {pct(r['pct_secciones'], 0)}% CONTADO", _f(F_DATOS, 18), LILA, 0.18, "a")
+    y += 36
+    ancho_b = xr - xl
+    for nombre, val, col in (("Flávio", pf, BOLSO), ("Lula", pl, LULA)):
+        d.text((xl, y), nombre, font=_f(F_TEXTO, 25), fill=BLANCO, anchor="la")
+        d.text((xr, y - 4), f"{pct(val, 1)}%", font=_f(F_DISPLAY, 32), fill=col, anchor="ra")
+        d.rectangle([xl, y + 38, xr, y + 45], fill=(0x2C, 0x00, 0x56))
+        d.rectangle([xl, y + 38, xl + ancho_b * val / 100, y + 45], fill=col)
+        y += 62
+
+    hora = r["hora_tse"].split(" ")[1][:5]
+    nota = (f"Conteo parcial del TSE ({hora}). La regla mira la 1ª vuelta; 1994 y 1998 se definieron en vuelta única.",
+            "Mapa: % Lula (rojo) vs. Flávio (azul) por municipio de Minas Gerais; en negro, aún sin datos.")
+    yn = H - SAFE_B - 8 - 34 - 10 - 24 * len(nota)
+    for ln in nota:
+        d.text((SAFE_X, yn), ln, font=_f(F_TEXTO, 16), fill=(0xB8, 0xA4, 0xCC), anchor="la")
+        yn += 24
+
+    yp = H - SAFE_B - 8
+    d.line([(SAFE_X, yp - 34), (W - SAFE_X, yp - 34)], fill=(0xC4, 0x0B, 0xFF, 70))
+    track(d, (SAFE_X, yp), "ATLAS ANALYTICS · ATLAS-ANALYTICS.SITE", _f(F_DATOS, 17), LILA, 0.18, "s")
+    im.convert("RGB").save(salida, quality=95, subsampling=0)
+    return salida
+
+
 def main_resultado():
     res = json.loads(RESUMEN.read_text(encoding="utf-8"))
     conteo = json.loads(CONTEO.read_text(encoding="utf-8"))
@@ -453,6 +539,9 @@ def main_resultado():
     SALIDA.mkdir(parents=True, exist_ok=True)
     out = SALIDA / f"post_resultado_1v_{conteo['descarga_utc'][:10]}.jpg"
     armar_resultado(res, conteo, mun, out)
+    print(out)
+    out = SALIDA / f"post_minas_{conteo['descarga_utc'][:10]}.jpg"
+    armar_minas(conteo, mun, out)
     print(out)
 
 
