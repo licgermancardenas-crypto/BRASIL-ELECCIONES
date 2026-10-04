@@ -7,7 +7,8 @@ Formato 1080x1350 (4:5) con el sistema de marca de los posteos de Atlas
 Las cifras salen de resumen_presidencial_encuestas_2026.json; el mapa, de los
 municipios.geojson por UF (lula_2v = % Lula en votos válidos, 2º turno 2022).
 
-    python -m src.viz.post_pronostico
+    python -m src.viz.post_pronostico              # pronóstico
+    python -m src.viz.post_pronostico --resultado  # pronóstico vs. conteo TSE
 """
 import io
 import json
@@ -106,8 +107,10 @@ def cargar_municipios():
     return gpd.GeoDataFrame(pd.concat(capas, ignore_index=True), crs=capas[0].crs)
 
 
-def render_mapa(mun, ancho_px):
-    """Devuelve (RGBA del mapa, RGBA del contorno para el resplandor)."""
+def render_mapa(mun, ancho_px, columna="lula_2v"):
+    """Devuelve (RGBA del mapa, RGBA del contorno para el resplandor).
+
+    columna: % Lula (0-100). Los municipios sin dato quedan en tinta apagada."""
     mun = mun.to_crs("ESRI:102033")  # Albers América del Sur: área fiel
     ufs = mun.dissolve("uf")
     pais = ufs.dissolve()
@@ -141,9 +144,11 @@ def render_mapa(mun, ancho_px):
 
     fig, ax = figura()
     # 30% → azul pleno, 70% → coral pleno: la mitad del país está en ese rango
-    v = mun["lula_2v"].fillna(50).clip(25, 75)
-    mun.assign(v=v).plot(ax=ax, column="v", cmap=cmap, vmin=25, vmax=75,
-                         linewidth=0.05, edgecolor=(0.07, 0, 0.16, 0.35))
+    mun.plot(ax=ax, color="#22103A", linewidth=0.05, edgecolor=(0.07, 0, 0.16, 0.35))
+    con = mun[mun[columna].notna()]
+    con.assign(v=con[columna].clip(25, 75)).plot(
+        ax=ax, column="v", cmap=cmap, vmin=25, vmax=75,
+        linewidth=0.05, edgecolor=(0.07, 0, 0.16, 0.35))
     ufs.boundary.plot(ax=ax, linewidth=0.55, color=(0.94, 0.75, 0.97, 0.55))
     pais.boundary.plot(ax=ax, linewidth=1.1, color=(0.94, 0.75, 0.97, 0.95))
     mapa = a_img(fig)
@@ -353,6 +358,104 @@ def armar_mapa(res, mun, salida, ancho=900):
     return salida
 
 
+CONTEO = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v.json"
+CONTEO_MUN = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v_municipios.parquet"
+
+
+def armar_resultado(res, conteo, mun, salida, ancho=860):
+    """Pronóstico (corte 1/10) contra la proyección del conteo del TSE.
+    El mapa es 2026: % Lula sobre Lula + Flávio por municipio, conteo parcial."""
+    im = fondo().convert("RGBA")
+    mapa, glow = render_mapa(mun, ancho, columna="lula_2026")
+    mx, my = W - mapa.width - 30, 300
+    _halo(im, glow, (mx, my))
+    im.alpha_composite(mapa, (mx, my))
+    im = grano(im.convert("RGB"), 6).convert("RGBA")
+    d = ImageDraw.Draw(im, "RGBA")
+
+    yb = 92
+    d.rectangle([SAFE_X, yb - 13, SAFE_X + 3, yb + 13], fill=VIOLETA)
+    track(d, (SAFE_X + 20, yb), "BRASIL 2026 · PRONÓSTICO VS. RESULTADO", _f(F_DATOS, 21), NEON, 0.22, "m")
+    lg = Image.open(LOGO_H).convert("RGBA")
+    lg = lg.resize((round(lg.width * 34 / lg.height), 34), Image.LANCZOS)
+    im.alpha_composite(lg, (W - SAFE_X - lg.width, yb - lg.height // 2))
+    d.line([(SAFE_X, yb + 40), (W - SAFE_X, yb + 40)], fill=(0xC4, 0x0B, 0xFF, 70))
+
+    pron, proy = res["agregado_1v_pct"], conteo["proyeccion_pct"]
+    hay_balotaje = max(proy.values()) < 50
+    track(d, (SAFE_X, 168), "HAY BALOTAJE" if hay_balotaje else "SIN BALOTAJE",
+          _f(F_DISPLAY, 92), BLANCO, -0.02, "a")
+    dF = proy["flavio_bolsonaro"] - pron["flavio_bolsonaro"]
+    d.text((SAFE_X, 272), f"Flávio rinde {pct(dF, 0)} puntos más que las encuestas",
+           font=_f(F_TEXTO, 25), fill=TEXTO, anchor="la")
+
+    # --- arriba a la derecha: el error con Flávio
+    xr = W - SAFE_X
+    f_k = _f(F_DATOS, 18)
+    t = "ERROR CON FLÁVIO"
+    track(d, (xr - track_w(d, t, f_k, 0.2), 312), t, f_k, LILA, 0.20, "a")
+    f_g, f_p = _f(F_DISPLAY, 80), _f(F_DISPLAY, 34)
+    wp = d.textlength("pp", font=f_p)
+    d.text((xr, 350), "pp", font=f_p, fill=BOLSO, anchor="ra")
+    d.text((xr - wp - 8, 340), "+" + pct(dF, 1), font=f_g, fill=BOLSO, anchor="ra")
+
+    # --- abajo a la izquierda: pronóstico → proyección
+    y = 810
+    f_col = _f(F_DATOS, 17)
+    track(d, (SAFE_X, y), "% VÁLIDOS", f_k, LILA, 0.20, "a")
+    xa, xb = SAFE_X + 150, SAFE_X + 300
+    track(d, (xa, y + 34), "PRONÓST.", f_col, (0xB8, 0xA4, 0xCC), 0.12, "a")
+    track(d, (xb, y + 34), "RESULTADO*", f_col, NEON, 0.12, "a")
+    y += 68
+    for nombre, k, col in (("FLÁVIO", "flavio_bolsonaro", BOLSO), ("LULA", "lula", LULA)):
+        d.rectangle([SAFE_X, y + 4, SAFE_X + 6, y + 70], fill=col)
+        track(d, (SAFE_X + 20, y + 24), nombre, _f(F_DATOS_B, 21), col, 0.18, "a")
+        d.text((xa, y + 12), pct(pron[k], 1), font=_f(F_DISPLAY, 46), fill=(0xB8, 0xA4, 0xCC), anchor="la")
+        d.text((xb, y + 2), pct(proy[k], 1), font=_f(F_DISPLAY, 62), fill=BLANCO, anchor="la")
+        y += 96
+
+    # --- abajo a la derecha: qué sigue
+    ancho_c = 290
+    xl = xr - ancho_c
+    y = 950
+    track(d, (xl, y), "BALOTAJE · 25/10", f_k, LILA, 0.20, "a")
+    s = res["sensibilidad_con_correccion_de_sesgo"]["prob_presidente"]["flavio_bolsonaro"]
+    for i, ln in enumerate(("Se cumplió nuestro escenario", "con el sesgo de 2018/22.",
+                            "En ese escenario, Flávio")):
+        d.text((xl, y + 36 + 30 * i), ln, font=_f(F_TEXTO, 22), fill=TEXTO, anchor="la")
+    d.text((xl, y + 130), f"tenía {round(s * 100)}% de ganar.", font=_f(F_DISPLAY, 24), fill=NEON, anchor="la")
+
+    hora = max(r["hora_tse"] for r in conteo["por_uf"].values()).split(" ")[1][:5]
+    nota = (f"*Proyección Atlas con {pct(conteo['pct_secciones_contadas'], 1)}% de las secciones contadas "
+            f"(TSE, {hora}): cada estado se completa como viene votando.",
+            "Pronóstico: agregador de encuestas, corte 1/10. Mapa: % Lula vs. Flávio por municipio, conteo parcial.")
+    yn = H - SAFE_B - 8 - 34 - 10 - 24 * len(nota)
+    for ln in nota:
+        d.text((SAFE_X, yn), ln, font=_f(F_TEXTO, 16), fill=(0xB8, 0xA4, 0xCC), anchor="la")
+        yn += 24
+
+    yp = H - SAFE_B - 8
+    d.line([(SAFE_X, yp - 34), (W - SAFE_X, yp - 34)], fill=(0xC4, 0x0B, 0xFF, 70))
+    track(d, (SAFE_X, yp), "ATLAS ANALYTICS · ATLAS-ANALYTICS.SITE", _f(F_DATOS, 17), LILA, 0.18, "s")
+    im.convert("RGB").save(salida, quality=95, subsampling=0)
+    return salida
+
+
+def main_resultado():
+    res = json.loads(RESUMEN.read_text(encoding="utf-8"))
+    conteo = json.loads(CONTEO.read_text(encoding="utf-8"))
+    mun = cargar_municipios()
+    m = pd.read_parquet(CONTEO_MUN)
+    m = m[(m.flavio + m.lula) > 0]
+    m["lula_2026"] = 100 * m.lula / (m.lula + m.flavio)
+    mun = mun.assign(codigo=mun.codigo.astype(int)).merge(
+        m[["codigo", "lula_2026"]].astype({"codigo": int}), on="codigo", how="left")
+    SALIDA.mkdir(parents=True, exist_ok=True)
+    out = SALIDA / f"post_resultado_1v_{conteo['descarga_utc'][:10]}.jpg"
+    armar_resultado(res, conteo, mun, out)
+    print(out)
+
+
 def main():
     res = json.loads(RESUMEN.read_text(encoding="utf-8"))
     SALIDA.mkdir(parents=True, exist_ok=True)
@@ -366,4 +469,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main_resultado() if "--resultado" in sys.argv else main()
