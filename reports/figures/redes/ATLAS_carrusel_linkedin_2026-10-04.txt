@@ -1,22 +1,13 @@
-El jueves publiqué un pronóstico para la primera vuelta en Brasil. El domingo se cumplió el escenario que menos me gustaba.
+El jueves publicamos en Atlas un pronóstico para la primera vuelta en Brasil: Lula 44,1%, Flávio Bolsonaro 41,6% y un balotaje casi seguro.
 
-El modelo daba empate técnico: Lula 44,1%, Flávio Bolsonaro 41,6%, y 94% de probabilidad de balotaje.
-Resultado (99,6% de las secciones): Flávio 47,1%, Lula 45,1%. Balotaje confirmado.
+El balotaje llegó. Lula sacó 45,1%, cerca de lo previsto. Flávio sacó 47,1%, cinco puntos y medio más de lo que marcaban las encuestas.
 
-Con Lula acertamos. Con Flávio, las encuestas fallaron por 5,5 puntos, el mismo sesgo que en 2018 y 2022. Por eso no publiqué una sola cifra sino dos escenarios: con y sin corrección del error histórico.
+Ese error tenía antecedentes. En 2018 las encuestas subestimaron a Bolsonaro por 6 puntos y en 2022, por 5,4. Por eso publicamos dos escenarios: con esa corrección, Flávio llegaba al balotaje como favorito (86%); sin ella, la elección era pareja (54%). Cuál usar era una decisión de método, y preferimos mostrar ambos.
 
-Tres aprendizajes de datos que valen para cualquier sector:
+Después del conteo me quedé con otra cosa. El 47 a 45 nacional describe a muy pocos estados: Lula sacó 22,9% en Roraima y 70,9% en Piauí. El voto además se agrupa en el territorio. En 2022, 2.258 municipios formaban bloques homogéneos con sus vecinos, con un índice de Moran de 0,88. Hasta el peso de una variable del Censo cambia según la región: más alfabetización le resta 12 puntos a Lula en Santa Catarina y le suma 5 en Amazonas.
 
-📊 La estadística descriptiva no es "lo básico". Un 47 a 45 nacional esconde un país partido: Lula va de 23% en Roraima a 71% en Piauí, con un desvío de ±14 puntos entre estados. Un promedio sin dispersión lleva a conclusiones equivocadas.
+En el carrusel están los gráficos, los mapas y el método. Todo sale de datos públicos del TSE y del IBGE.
 
-🗺️ El dónde explica el por qué. El índice de Moran del voto por municipio es 0,88: el voto se agrupa en territorios. Y una regresión geográficamente ponderada (GWR) sube el R² de 0,72 a 0,94, porque las mismas variables del Censo pesan distinto según la región.
+El 25 de octubre volvemos con el balotaje.
 
-🎯 Un buen pronóstico mide su incertidumbre. 10.000 simulaciones Montecarlo no dicen quién gana: dicen cuán seguros podemos estar y de dónde puede venir el error.
-
-En el carrusel: pronóstico vs. resultado, el país estado por estado, los focos espaciales del voto y la "regla de Minas Gerais" (9 de 9 desde 1989).
-
-El 25 de octubre llega el balotaje. Ya estoy recalibrando el modelo con el resultado real.
-
-¿En tu sector, cuántas decisiones se toman mirando solo el promedio?
-
-#DataAnalytics #Estadística #AnálisisGeoespacial #GIS #CienciaDeDatos #DataViz #Brasil2026 #AtlasAnalytics
+#Brasil2026 #AnálisisElectoral #DatosAbiertos #GIS
