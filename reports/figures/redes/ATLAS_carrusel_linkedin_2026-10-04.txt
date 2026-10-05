@@ -1,0 +1,22 @@
+El jueves publiqué un pronóstico para la primera vuelta en Brasil. El domingo se cumplió el escenario que menos me gustaba.
+
+El modelo daba empate técnico: Lula 44,1%, Flávio Bolsonaro 41,6%, y 94% de probabilidad de balotaje.
+Resultado (99,6% de las secciones): Flávio 47,1%, Lula 45,1%. Balotaje confirmado.
+
+Con Lula acertamos. Con Flávio, las encuestas fallaron por 5,5 puntos, el mismo sesgo que en 2018 y 2022. Por eso no publiqué una sola cifra sino dos escenarios: con y sin corrección del error histórico.
+
+Tres aprendizajes de datos que valen para cualquier sector:
+
+📊 La estadística descriptiva no es "lo básico". Un 47 a 45 nacional esconde un país partido: Lula va de 23% en Roraima a 71% en Piauí, con un desvío de ±14 puntos entre estados. Un promedio sin dispersión lleva a conclusiones equivocadas.
+
+🗺️ El dónde explica el por qué. El índice de Moran del voto por municipio es 0,88: el voto se agrupa en territorios. Y una regresión geográficamente ponderada (GWR) sube el R² de 0,72 a 0,94, porque las mismas variables del Censo pesan distinto según la región.
+
+🎯 Un buen pronóstico mide su incertidumbre. 10.000 simulaciones Montecarlo no dicen quién gana: dicen cuán seguros podemos estar y de dónde puede venir el error.
+
+En el carrusel: pronóstico vs. resultado, el país estado por estado, los focos espaciales del voto y la "regla de Minas Gerais" (9 de 9 desde 1989).
+
+El 25 de octubre llega el balotaje. Ya estoy recalibrando el modelo con el resultado real.
+
+¿En tu sector, cuántas decisiones se toman mirando solo el promedio?
+
+#DataAnalytics #Estadística #AnálisisGeoespacial #GIS #CienciaDeDatos #DataViz #Brasil2026 #AtlasAnalytics
