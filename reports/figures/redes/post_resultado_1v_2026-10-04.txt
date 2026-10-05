@@ -1,17 +1,17 @@
-Hay balotaje en Brasil. Con el 90% de las secciones contadas, nuestra proyección da Flávio Bolsonaro 47,4% y Lula 44,7%.
+Hay balotaje en Brasil. Con el 99,6% de las secciones contadas, Flávio Bolsonaro saca 47,1% y Lula 45,1%.
 
 El jueves pronosticamos un empate técnico, con 94% de probabilidad de balotaje. El balotaje se confirmó y con Lula acertamos: le dábamos 44,1%.
 
-Con Flávio no: las encuestas lo tenían en 41,6% y rinde 6 puntos más. Es el mismo error que tuvieron en 2018 y 2022, siempre a favor del candidato bolsonarista. Por eso publicamos dos escenarios, y esta noche se cumplió el que tenía el sesgo.
+Con Flávio no: las encuestas lo tenían en 41,6% y sacó 5,5 puntos más. Es el mismo error que tuvieron en 2018 y 2022, siempre a favor del candidato bolsonarista. Por eso publicamos dos escenarios, y esta noche se cumplió el que tenía el sesgo.
 
 El mapa muestra cómo se partió el país. El Nordeste sigue con Lula (más del 60% en Bahia, Ceará, Pernambuco y Maranhão), pero Flávio gana en el Sur, el Centro-Oeste, São Paulo, Rio y también en Minas Gerais.
 
 El 25 de octubre arranca con Flávio adelante. En el escenario que se cumplió, tenía 86% de probabilidad de ganar. Esta semana recalibramos el modelo con el resultado real.
 
-¿Lula puede dar vuelta casi 3 puntos en tres semanas?
+¿Lula puede dar vuelta 2 puntos en tres semanas?
 
 *Proyección Atlas: cada estado se completa al ritmo de lo que ya se contó. Pronóstico: agregador de encuestas, corte 1/10.
 
-Fuente: TSE, divulgación de resultados (conteo parcial); Atlas Analytics.
+Fuente: TSE, divulgación de resultados (99,6% de las secciones); Atlas Analytics.
 
 #AtlasAnalytics #Brasil2026 #EleiçõesBrasil #Elecciones #DataIntelligence #DataViz

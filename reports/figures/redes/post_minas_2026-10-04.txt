@@ -1,6 +1,6 @@
 Desde 1989, quien gana Minas Gerais en primera vuelta termina siendo presidente de Brasil. Pasó 9 de 9 veces. Esta noche Minas votó a Flávio Bolsonaro.
 
-Con el 88% contado, Flávio saca 48,8% en Minas contra 42,6% de Lula.
+Con el 99% contado, Flávio saca 48,3% en Minas contra 43,2% de Lula.
 
 ¿Por qué Minas? Es el segundo padrón del país y un Brasil en miniatura: el norte del estado vota como el Nordeste, y el sur y el Triângulo, como São Paulo y el Centro-Oeste. El mapa lo muestra: rojo arriba, azul abajo.
 
@@ -10,6 +10,6 @@ Hay que leerla con cuidado: es una regularidad, no una ley. Nueve elecciones son
 
 ¿Se rompe la regla en 2026?
 
-Fuente: TSE, conteo parcial 2026 y resultados por sección 2018/2022; resultados por estado 1989-2014 (Wikipedia, Gazeta do Povo).
+Fuente: TSE, conteo 2026 al 99% y resultados por sección 2018/2022; resultados por estado 1989-2014 (Wikipedia, Gazeta do Povo).
 
 #AtlasAnalytics #Brasil2026 #EleiçõesBrasil #MinasGerais #Elecciones #DataViz

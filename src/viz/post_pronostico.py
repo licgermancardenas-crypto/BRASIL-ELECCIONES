@@ -358,6 +358,7 @@ def armar_mapa(res, mun, salida, ancho=900):
     return salida
 
 
+FECHA_1V = "2026-10-04"  # nombre de archivo: día de la elección, no de la descarga (UTC)
 CONTEO = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v.json"
 CONTEO_MUN = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v_municipios.parquet"
 
@@ -386,7 +387,7 @@ def armar_resultado(res, conteo, mun, salida, ancho=860):
     track(d, (SAFE_X, 168), "HAY BALOTAJE" if hay_balotaje else "SIN BALOTAJE",
           _f(F_DISPLAY, 92), BLANCO, -0.02, "a")
     dF = proy["flavio_bolsonaro"] - pron["flavio_bolsonaro"]
-    d.text((SAFE_X, 272), f"Flávio rinde {pct(dF, 0)} puntos más que las encuestas",
+    d.text((SAFE_X, 272), f"Flávio rinde {pct(dF, 1)} puntos más que las encuestas",
            font=_f(F_TEXTO, 25), fill=TEXTO, anchor="la")
 
     # --- arriba a la derecha: el error con Flávio
@@ -537,10 +538,10 @@ def main_resultado():
     mun = mun.assign(codigo=mun.codigo.astype(int)).merge(
         m[["codigo", "lula_2026"]].astype({"codigo": int}), on="codigo", how="left")
     SALIDA.mkdir(parents=True, exist_ok=True)
-    out = SALIDA / f"post_resultado_1v_{conteo['descarga_utc'][:10]}.jpg"
+    out = SALIDA / f"post_resultado_1v_{FECHA_1V}.jpg"
     armar_resultado(res, conteo, mun, out)
     print(out)
-    out = SALIDA / f"post_minas_{conteo['descarga_utc'][:10]}.jpg"
+    out = SALIDA / f"post_minas_{FECHA_1V}.jpg"
     armar_minas(conteo, mun, out)
     print(out)
 
