@@ -143,3 +143,30 @@ seccion:
   # Tebet; Zema (Novo) y Santos (Missão) ~ "otros" 2022 (D'Avila/Novo,
   # Soraya, Kelmon: derecha no bolsonarista). Supuesto, no dato.
   analogia_2026: {cury: ciro, caiado: tebet, zema: otros, renan_santos: otros, otros: otros}
+
+balotaje:
+  # Balotaje presidencial 2026 desde el resultado de la 1ª vuelta (src/models/balotaje_2026.py).
+  # Decisión del 2026-10-07: empezar por la matriz de transferencias y recalibrar
+  # el pronóstico con el resultado del 4/10, no con encuestas.
+  # A qué grupo 2022 se parece cada tercero 2026 (Zema va dentro de "otros").
+  analogia: {cury: ciro, caiado: tebet, renan_santos: otros, otros: otros}
+  # Lo mismo un ciclo atrás para el backtest (grupos de 2018 en seccion.grupos).
+  analogia_backtest: {ciro: ciro, tebet: centro, otros: otros}
+  # Regresión de origen por município: UF con menos municípios usan la matriz de su región.
+  min_municipios_uf: 80
+  metodo_principal: R
+  # Shock nacional del Montecarlo = error nacional del backtest (1 observación),
+  # media diferencia entre métodos y este piso por lo que el backtest no ve
+  # (participación diferencial, campaña de 3 semanas, apoyos).
+  sigma_nacional_extra_pp: 1.5
+  # Shock nacional con t de Student (colas gruesas): 1 backtest no alcanza
+  # para confiar en una normal.
+  grados_libertad_t: 4
+  n_simulaciones: 20000
+  random_seed: 2026
+  # Proporción a Lula (entre los que votan válido) que se impone a algunos
+  # terceros. Supuestos para leer los apoyos declarados después del 4/10.
+  escenarios:
+    caiado_y_zema_con_flavio: {caiado: 0.20, otros: 0.20}
+    mas_renan_con_flavio: {caiado: 0.20, otros: 0.20, renan_santos: 0.20}
+    cury_con_lula: {cury: 0.65}

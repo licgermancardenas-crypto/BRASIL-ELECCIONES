@@ -10,7 +10,7 @@ escaladas por 100 / %secciones contadas. Esto corrige el sesgo de orden del
 conteo entre regiones (el Nordeste suele contar más tarde), pero no el de
 dentro de cada UF (interior vs. capital).
 
-    python -m src.models.conteo_2026 [--municipios]
+    python -m src.models.conteo_2026 [--municipios | --final]
 """
 import json
 import sys
@@ -24,6 +24,7 @@ RAIZ = Path(__file__).resolve().parents[2]
 RAW = RAIZ / "data" / "raw" / "tse" / "resultados" / "2026_1v_divulgacion"
 SALIDA = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v.json"
 SALIDA_MUN = RAIZ / "data" / "processed" / "electoral" / "conteo_presidencial_2026_1v_municipios.parquet"
+SALIDA_FINAL = RAIZ / "data" / "processed" / "electoral" / "resultado_presidencial_2026_1v_municipios.parquet"
 
 ELEICAO = "6257"  # Eleição Ordinária Federal 2026, 1º turno (comum/config/ele-c.json)
 BASE = "https://resultados.tse.jus.br/oficial/ele2026/{e}"
@@ -92,6 +93,40 @@ def municipios(carpeta):
     print(f"municipios: {len(nuevo)} de {len(pedir)} pedidos; total {len(df)} de {len(lista)}, {int((df.validos > 0).sum())} con votos")
 
 
+def final_municipios(carpeta):
+    """Resultado final por municipio con todos los candidatos, blancos, nulos y abstención.
+
+    A diferencia de `municipios` (incremental, solo Flávio y Lula, para la noche
+    de la elección), pide todo de nuevo y guarda el padrón y la comparecencia,
+    que hacen falta para la regresión ecológica del balotaje.
+    """
+    import pandas as pd
+    cfg = json.loads(_get(URL_CONFIG_MUN.format(e=ELEICAO)))
+    lista = [(a["cd"], m["cd"], m["cdi"]) for a in cfg["abr"] if a["cd"] != "zz" for m in a["mu"]]
+    (carpeta / "municipios_final").mkdir(exist_ok=True)
+
+    def uno(t):
+        uf, mu, ibge = t
+        destino = carpeta / "municipios_final" / f"{uf}{mu}.json"
+        try:
+            crudo = destino.read_bytes() if destino.exists() else _get(URL_MUN.format(e=ELEICAO, uf=uf, mu=mu))
+        except Exception:
+            return None
+        destino.write_bytes(crudo)
+        d = json.loads(crudo)
+        r = leer(crudo)
+        return {"uf": uf.upper(), "codigo": int(ibge), "pct_secciones": r["pct_secciones"],
+                "aptos": int(d["e"]["te"]), "comparecencia": int(d["e"]["c"]), "abstencion": int(d["e"]["a"]),
+                "blancos": int(d["v"]["vb"]), "nulos": int(d["v"]["tvn"]), "validos": r["validos_contados"],
+                **{c: r["votos"].get(c, 0) for c in [*CLAVES.values(), "otros"]}}
+
+    with ThreadPoolExecutor(6) as ex:
+        filas = [f for f in ex.map(uno, lista) if f is not None]
+    df = pd.DataFrame(filas)
+    df.to_parquet(SALIDA_FINAL, index=False)
+    print(f"final: {len(df)} de {len(lista)} municipios; {int((df.pct_secciones >= 100).sum())} al 100%")
+
+
 def leer(crudo):
     d = json.loads(crudo)
     votos = {}
@@ -143,6 +178,8 @@ def main():
     print(f"proyección {res['proyeccion_pct']}")
     if "--municipios" in sys.argv:
         municipios(carpeta)
+    if "--final" in sys.argv:
+        final_municipios(carpeta)
 
 
 if __name__ == "__main__":
