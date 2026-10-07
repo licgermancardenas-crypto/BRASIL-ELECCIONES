@@ -1,0 +1,13 @@
+Después del 4 de octubre me propuse pronosticar el balotaje de Brasil sin mirar una sola encuesta. Solo con los resultados oficiales del TSE, municipio por municipio.
+
+El punto de partida: Flávio Bolsonaro sacó 2,2 M de votos más que Lula. Los candidatos que quedaron afuera suman 9,3 M. Si votaran exactamente los mismos electores, Lula necesitaría llevarse el 62% de esos votos.
+
+Para saber hacia dónde van, crucé dónde creció cada tercero con cómo había votado cada municipio en la segunda vuelta de 2022. De cada 100 votantes de Cury, 34 habían votado a Lula y 44 a Bolsonaro. Con Renan Santos y Caiado pasa algo parecido. Si cada uno vuelve a su lado, Lula se lleva el 43% de ese voto, y con la movilización que tuvo la segunda vuelta de 2022, el empate exige 86%.
+
+La otra salida sería la participación. 5,7 M de votantes de Lula en 2022 no fueron a votar el 4 de octubre. Aun si volvieran todos, la brecha es de 6,4 M, y del otro lado hay 3,0 M de votantes de Bolsonaro en la misma situación.
+
+Antes de publicarlo probé el método un ciclo atrás: con la segunda vuelta de 2018 y la primera de 2022 predijo el balotaje de 2022 con 0,2 puntos de error. El resultado para el 25 de octubre: Lula 47,3%, y Flávio gana en el 96% de las simulaciones.
+
+Es inferencia ecológica: describe territorios, no personas. En el carrusel están los gráficos y el método.
+
+#Brasil2026 #AnálisisElectoral #DatosAbiertos #Elecciones
