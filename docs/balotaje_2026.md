@@ -138,3 +138,19 @@ Noche del 25/10:
     python -m src.models.tablero_2v_2026 --loop 180
 
 y abrir `reports/tablero/tablero_2v.html` (se recarga cada 60 s).
+
+## Perfil de la reserva con el Censo (`src/models/perfil_reserva_2026.py`)
+
+Cruza la reserva por município (movilizacion_2026) con el Censo 2022 por local
+de votación sumado a município (5.367 municípios). Perfil de territorios, no de
+personas. Salida en `data/processed/electoral/perfil_reserva_2026/<fecha_utc>/`.
+
+- Abandono (votantes de la 2ª vuelta 2022 que no votaron el 4/10): Lula 9,4 %,
+  Bolsonaro 5,2 %. Crece con el tamaño del município para Lula (8,9 % en los de
+  menos de 20 mil electores a 10,1 % en los de más de 500 mil) y baja para
+  Bolsonaro (5,7 % a 4,7 %). Por región, Lula pierde más en el Sudeste (10,9 %).
+- Regresiones con efectos fijos de UF: dentro de cada estado ninguna variable
+  del Censo mueve el abandono de Lula más de 0,5 pts por desvío estándar; los
+  municípios con más abandono son más urbanos y con más cloaca a red.
+- En el Norte la estimación da lo contrario (Lula 2,6 %, Bolsonaro 10,9 %):
+  pocos municípios grandes y matriz de región, leerlo con cautela.

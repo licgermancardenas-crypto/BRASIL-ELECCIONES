@@ -37,6 +37,7 @@ from src.models.balotaje_gobernadores_2026 import SALIDA_DIR as GOBERNADORES_DIR
 from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
 from src.models.montecarlo.proyeccion_bancas import ROOT
 from src.models.movilizacion_2026 import SALIDA_DIR as MOVILIZACION_DIR
+from src.models.perfil_reserva_2026 import SALIDA_DIR as PERFIL_DIR
 import src.viz.carrusel_linkedin as cl
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm, to_hex
 from src.viz.post_pronostico import cargar_municipios
@@ -256,6 +257,34 @@ def mapas_municipales(mun: pd.DataFrame) -> pd.DataFrame:
     return geo
 
 
+def fig_abandono(P: dict) -> None:
+    a = P["abandono"]
+    paneles = [("Por región", ["Sudeste", "Nordeste", "Centro-Oeste", "Sul", "Norte"], "region"),
+               ("Por tamaño del municipio (electores)", ["Menos de 20 mil electores", "20 a 100 mil", "100 a 500 mil",
+                                                         "Más de 500 mil"], "tamano")]
+    f, axes = plt.subplots(1, 2, figsize=(10.2, 3.3))
+    for ax, (tit, cats, k) in zip(axes, paneles):
+        y = np.arange(len(cats))
+        lu = [a[f"lula_por_{k}"][c] for c in cats]
+        bo = [a[f"bolsonaro_por_{k}"][c] for c in cats]
+        ax.barh(y - 0.19, lu, height=0.36, color=C_LULA, label="Votantes de Lula 2022", zorder=2)
+        ax.barh(y + 0.19, bo, height=0.36, color=C_FLAVIO, label="Votantes de Bolsonaro 2022", zorder=2)
+        for yi, v in zip(y, lu):
+            ax.text(v + 0.2, yi - 0.19, f1(v), va="center", fontsize=8, color=INK)
+        for yi, v in zip(y, bo):
+            ax.text(v + 0.2, yi + 0.19, f1(v), va="center", fontsize=8, color=INK)
+        ax.set_yticks(y, [c.replace(" electores", "") for c in cats], fontsize=8.5)
+        ax.set_ylim(len(cats) - 0.5, -0.6)
+        ax.set_xlim(0, 13)
+        ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+        ax.set_title(tit, fontsize=9, loc="left", weight="bold", color=INK)
+        limpiar(ax, grid="x")
+    f.tight_layout()
+    h, l = axes[0].get_legend_handles_labels()
+    f.legend(h, l, frameon=False, fontsize=8, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.99))
+    guardar(f, "abandono.svg")
+
+
 def fig_gobernadores(g: pd.DataFrame) -> None:
     d = g.sort_values("prob_A")
     f, ax = plt.subplots(figsize=(6.4, 4.2))
@@ -301,6 +330,7 @@ td { white-space:nowrap; }
 .fig-reserva { max-height:7.4cm; }
 .fig-ev { max-height:7cm; }
 .fig-gob { max-height:9.6cm; }
+.fig-aband { max-height:6.6cm; }
 .mapas { display:flex; gap:.5cm; }
 .mapas > div { flex:1; } .mapas img { width:100%; max-height:11.2cm; object-fit:contain; }
 .mapas h3 { font-size:10pt; margin:0 0 .15cm; } .grad-ley { display:flex; align-items:center; gap:.2cm; font-size:7.6pt; color:#6B6480; }
@@ -364,6 +394,8 @@ def construir(fecha: date) -> Path:
     fig_reserva(M)
     fig_entre_vueltas(M)
     fig_gobernadores(Gb_uf)
+    PR = json.loads((ultima(PERFIL_DIR) / "resumen.json").read_text(encoding="utf-8"))
+    fig_abandono(PR)
     mun_pred = pd.read_parquet(corrida / "municipios.parquet")
     geo = mapas_municipales(mun_pred)
     if PORTADA.exists():
@@ -650,6 +682,37 @@ def construir(fecha: date) -> Path:
              titulo="La historia juega en contra: la 2ª vuelta suele favorecer la participación bolsonarista",
              bajada="Cambio de la abstención entre vueltas en 2018 y 2022, y dónde están los votantes que Lula podría recuperar.",
              pie="TSE por local de votación 2018 y 2022 y por município 2026. Estimaciones municipales: orden de magnitud, no conteo.")
+
+    # ================================================================ 8b · quiénes son
+    ab = PR["abandono"]
+    qs = PR["quintiles_reserva"]
+    filas = [[f"Q{i + 1}" + (" (menos abandono)" if i == 0 else " (más abandono)" if i == 4 else ""),
+              f1(q["abandono_lula"]) + " %", f1(q["abandono_bolsonaro"]) + " %", f1(q["urbano"]) + " %",
+              f1(q["cloaca_red"]) + " %", f1(q["banos_2mas"]) + " %", f1(q["preta_parda"]) + " %",
+              f1(q["electores_m"]) + " M"] for i, q in enumerate(qs)]
+    rg = PR["regresiones"]["abandono_lula"]["coef"]
+    mayor = max((k for k in PR["etiquetas"]["censo"]), key=lambda k: abs(rg[k]["b"]))
+    cuerpo = (fig("abandono.svg", "fig fig-aband")
+              + fuente("Abandono: parte de los votantes de cada candidato en la 2ª vuelta de 2022 que no votó el 4/10. "
+                       "Estimación ecológica por municipio (misma matriz de la página anterior).")
+              + '<div class="dos-col dos-col-55" style="margin-top:.2cm"><div>'
+              + '<h3 class="sub">Municipios ordenados por abandono de Lula (quintiles)</h3>'
+              + tabla(["", "Abandono Lula", "Abandono Bolsonaro", "Urbano", "Cloaca", "2+ baños", "Negra o parda", "Electores"],
+                      filas, num=(1, 2, 3, 4, 5, 6, 7))
+              + fuente("Censo 2022 por local de votación, sumado a municipio y ponderado por padrón.")
+              + "</div><div>"
+              + insight(f"<b>Uno de cada 11 votantes de Lula de 2022 no votó el 4/10</b> ({f1(ab['lula'])} %). De los de "
+                        f"Bolsonaro, uno de cada 19 ({f1(ab['bolsonaro'])} %).")
+              + insight(f"<b>La brecha crece con la ciudad.</b> En los municipios de más de 500 mil electores el abandono de "
+                        f"Lula llega a {f1(ab['lula_por_tamano']['Más de 500 mil'])} %, contra "
+                        f"{f1(ab['bolsonaro_por_tamano']['Más de 500 mil'])} % de Bolsonaro.")
+              + insight("<b>Es una geografía más que un perfil social.</b> Los municipios con más abandono son más urbanos y "
+                        "con mejor infraestructura, pero dentro de cada estado ninguna variable del Censo mueve el abandono "
+                        f"más de {f1(abs(rg[mayor]['b']))} pts por desvío estándar.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="8 · MOVILIZACIÓN", titulo="Lula perdió más votantes por abstención que Bolsonaro, sobre todo en las grandes ciudades",
+             bajada="Abandono de los votantes de 2022 por región y tamaño de municipio, y perfil del Censo de los municipios con más abandono.",
+             pie="Perfil de territorios, no de personas: dice dónde está la reserva, no quiénes son los que no votaron.")
 
     # ================================================================ 9 · gobernadores
     gu = Gb_uf.sort_values("prob_A", ascending=False)
