@@ -228,10 +228,10 @@ def textos(E, st, gob) -> dict:
     lu, pron = lula_final(E), E["lula_pronostico"]
     dif = lu - pron
     if es_final(E):
-        quien = "Lula" if lu > 50 else "Flávio Bolsonaro"
-        pres = (f"{quien} ganó el balotaje en Brasil. Lula sacó {pct(lu, 1)}% de los votos válidos.\n\n"
-                f"El 7 de octubre, sin usar encuestas, pronosticamos Lula {pct(pron, 1)}%: una diferencia de "
-                f"{pct(abs(dif), 1)} puntos {'a favor' if dif > 0 else 'en contra'} de Lula. El modelo partía del resultado de la "
+        abre = (f"Lula ganó el balotaje en Brasil con {pct(lu, 1)}% de los votos válidos." if lu > 50 else
+                f"Flávio Bolsonaro ganó el balotaje en Brasil con {pct(100 - lu, 1)}% de los votos válidos.")
+        pres = (f"{abre}\n\nEl 7 de octubre, sin usar encuestas, pronosticamos Lula {pct(pron, 1)}%. El resultado le dio "
+                f"{pct(abs(dif), 1)} puntos {'más' if dif > 0 else 'menos'} de lo pronosticado. El modelo partía del resultado de la "
                 "primera vuelta, municipio por municipio, y de cómo se habían movido los votos entre vueltas en 2022.")
     else:
         pres = (f"Con el {pct(E['votos_contados_pct'], 0)}% de los votos contados, Lula tiene {pct(E['lula_contado'], 1)}%. "
