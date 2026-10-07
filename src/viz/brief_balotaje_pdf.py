@@ -37,6 +37,9 @@ from src.models.balotaje_gobernadores_2026 import SALIDA_DIR as GOBERNADORES_DIR
 from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
 from src.models.montecarlo.proyeccion_bancas import ROOT
 from src.models.movilizacion_2026 import SALIDA_DIR as MOVILIZACION_DIR
+import src.viz.carrusel_linkedin as cl
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm, to_hex
+from src.viz.post_pronostico import cargar_municipios
 from src.viz.brief_pdf import (BRIEFS, C_FLAVIO, C_LULA, CHROME, CSS_MARCA, INK, MUTED, PORTADA, RULE, VIO,
                                Documento, f0, f1, fig, fuente, insight, kpi, limpiar, pe, sg, tabla, ultima)
 
@@ -238,6 +241,21 @@ def fig_entre_vueltas(M: dict) -> None:
     guardar(f, "entre_vueltas.svg")
 
 
+def mapas_municipales(mun: pd.DataFrame) -> pd.DataFrame:
+    """Dos mapas por município: pronóstico de Lula en la 2ª vuelta y cambio contra la 2ª vuelta real de 2022."""
+    cl.BUILD = BUILD / "figs"   # mapa_png escribe en cl.BUILD
+    geo = cargar_municipios()
+    geo = geo.assign(codigo=geo.codigo.astype(int)).merge(
+        mun[["lula_pct"]].reset_index().astype({"codigo": int}), on="codigo", how="left")
+    geo["cambio"] = geo["lula_pct"] - geo["lula_2v"]
+    cl.mapa_png(geo, cl.colores_voto(geo["lula_pct"]), "mapa_pronostico.png", 1400)
+    cmap = LinearSegmentedColormap.from_list("cambio", [C_FLAVIO, "#9DB8D9", "#EFEAF3", "#E8A6A0", C_LULA])
+    norm = TwoSlopeNorm(vcenter=0, vmin=-10, vmax=10)
+    cl.mapa_png(geo, ["#DDDDDD" if pd.isna(x) else to_hex(cmap(norm(np.clip(x, -10, 10)))) for x in geo["cambio"]],
+                "mapa_cambio.png", 1400)
+    return geo
+
+
 def fig_gobernadores(g: pd.DataFrame) -> None:
     d = g.sort_values("prob_A")
     f, ax = plt.subplots(figsize=(6.4, 4.2))
@@ -283,6 +301,10 @@ td { white-space:nowrap; }
 .fig-reserva { max-height:7.4cm; }
 .fig-ev { max-height:7cm; }
 .fig-gob { max-height:9.6cm; }
+.mapas { display:flex; gap:.5cm; }
+.mapas > div { flex:1; } .mapas img { width:100%; max-height:11.2cm; object-fit:contain; }
+.mapas h3 { font-size:10pt; margin:0 0 .15cm; } .grad-ley { display:flex; align-items:center; gap:.2cm; font-size:7.6pt; color:#6B6480; }
+.grad-ley i { display:inline-block; width:3.2cm; height:.22cm; }
 .td-wrap td { white-space:normal; } .td-wrap td.num { white-space:nowrap; } .td-wrap table { font-size:8.2pt; }
 .cuenta { display:flex; gap:.3cm; align-items:stretch; margin:.3cm 0 .1cm; }
 .cuenta > div { flex:1; background:#FAF8FD; border-top:3px solid #5B3F99; padding:.22cm .25cm; }
@@ -342,6 +364,8 @@ def construir(fecha: date) -> Path:
     fig_reserva(M)
     fig_entre_vueltas(M)
     fig_gobernadores(Gb_uf)
+    mun_pred = pd.read_parquet(corrida / "municipios.parquet")
+    geo = mapas_municipales(mun_pred)
     if PORTADA.exists():
         shutil.copy(PORTADA, BUILD / "portada.jpg")
 
@@ -525,6 +549,34 @@ def construir(fecha: date) -> Path:
     D.pagina(cuerpo, kicker="5 · ESTADO POR ESTADO", titulo="El mapa de 2022 se corre hacia Flávio en casi todas partes",
              bajada="Voto de Lula en la 2ª vuelta por UF: pronóstico 2026 contra el resultado real de 2022.",
              pie="El exterior suma al total nacional pero no se muestra.")
+
+    # ================================================================ 5b · el mapa
+    g_ok = geo.dropna(subset=["lula_pct", "lula_2v"])
+    n26, n22 = int((g_ok["lula_pct"] > 50).sum()), int((g_ok["lula_2v"] > 50).sum())
+    baja = (g_ok["cambio"] < 0).mean()
+    vol = g_ok[(g_ok["lula_2v"] > 50) & (g_ok["lula_pct"] < 50)]
+    por_uf_vol = vol.groupby("uf").size().sort_values(ascending=False).head(4)
+    camb_uf = g_ok.groupby("uf")["cambio"].median().sort_values()
+    cuerpo = ('<div class="mapas"><div><h3>Lula en la 2ª vuelta, pronóstico 2026</h3>'
+              '<img src="figs/mapa_pronostico.png">'
+              f'<div class="grad-ley">Flávio<i style="background:linear-gradient(90deg,{cl.FLAVIO},#EDE6DA,{cl.LULA})"></i>Lula'
+              '<span>(25 % a 75 %)</span></div></div>'
+              '<div><h3>Cambio contra la 2ª vuelta real de 2022</h3><img src="figs/mapa_cambio.png">'
+              f'<div class="grad-ley">Hacia Flávio<i style="background:linear-gradient(90deg,{C_FLAVIO},#EFEAF3,{C_LULA})"></i>'
+              'Hacia Lula<span>(−10 a +10 pts)</span></div></div>'
+              '<div style="flex:.85">'
+              + insight(f"<b>Lula ganaría en {f0(n26)} municipios, contra {f0(n22)} en 2022.</b> Los "
+                        f"{f0(len(vol))} que cambian de lado están sobre todo en "
+                        + ", ".join(f"{u} ({n})" for u, n in por_uf_vol.items()) + ".")
+              + insight(f"<b>El corrimiento es general:</b> Lula baja en {pe(baja)} de los municipios. Las bajas más grandes "
+                        "están en " + ", ".join(f"{u} ({f1(v)} pts)" for u, v in camb_uf.head(3).items()) + ", en mediana por municipio.")
+              + insight("<b>Es la base del tablero del 25/10:</b> cada municipio que el TSE vaya contando se compara con su "
+                        "pronóstico, y la diferencia se proyecta sobre lo que falta contar.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="5 · MUNICIPIO POR MUNICIPIO", titulo=f"Lula ganaría en {f0(n26)} municipios, {f0(n22 - n26)} menos que en 2022",
+             bajada="Pronóstico de la 2ª vuelta por municipio y cambio contra el resultado real de 2022.",
+             pie="Método por origen aplicado a cada municipio; suma lo mismo que el pronóstico por estado. Error medio por municipio "
+                 "en la prueba contra 2022: 1,1 pts.")
 
     # ================================================================ 6 · escenarios
     filas = [[ESC[k], f1(v["lula_pct"]) + " %", sg(v["lula_pct"] - lula)] for k, v in esc.items()]

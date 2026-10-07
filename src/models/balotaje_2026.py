@@ -191,6 +191,39 @@ def predecir(act: pd.DataFrame, T: dict, analogia: dict, metodo: str, celdas: pd
     return df
 
 
+def predecir_municipios(act: pd.DataFrame, T: dict, analogia: dict, celdas: pd.DataFrame,
+                        terceros: list[str]) -> pd.DataFrame:
+    """Método R por município: mismas reglas que `predecir`, con el origen de los terceros de cada município.
+
+    Suma exactamente lo mismo que `predecir(..., "R", ...)` por UF: el ajuste
+    proporcional de `celdas_origen` hace que el origen de cada município sume
+    sus votos observados.
+    """
+    partes = []
+    for u, x in act.groupby("uf"):
+        t = T[u]
+        v = pd.DataFrame(0.0, index=x.index, columns=DESTINO_2V)
+        for g in ("pt", "bolsonaro", "blanco_nulo", "abstencion"):
+            if f"{g}_1" in x:
+                v += np.outer(x[f"{g}_1"].to_numpy(float), t.loc[g].to_numpy())
+        for g in terceros:
+            n = x[f"{g}_1"].to_numpy(float)
+            fila = t.loc[analogia[g]]
+            valido = fila["pt"] + fila["bolsonaro"]
+            c = celdas[(celdas["uf"] == u) & (celdas["tercero"] == g)][ORIGEN].reindex(x.index).fillna(0)
+            tot = c.sum(axis=1).to_numpy()
+            a = np.where(tot > 0, (c["pt"] + (c["blanco_nulo"] + c["abstencion"]) * fila["pt"] / valido).to_numpy()
+                         / np.where(tot > 0, tot, 1), fila["pt"] / valido)
+            v["pt"] += n * valido * a
+            v["bolsonaro"] += n * valido * (1 - a)
+            v["blanco_nulo"] += n * fila["blanco_nulo"]
+            v["abstencion"] += n * fila["abstencion"]
+        partes.append(v.assign(uf=u))
+    df = pd.concat(partes)
+    df["lula_pct"] = df["pt"] / (df["pt"] + df["bolsonaro"]) * 100
+    return df
+
+
 def a_lula_nacional(act: pd.DataFrame, T: dict, analogia: dict, metodo: str, celdas, terceros) -> dict:
     """Proporción de cada tercero que va a Lula entre los que votan válido (nacional)."""
     res = {}
@@ -284,6 +317,20 @@ def main() -> None:
         return pt, bol
 
     pred = {m: nacional(p, exterior(m)) for m, p in est["pred"].items()}
+
+    # Pronóstico por município (método R), base del mapa y del tablero de la noche del 25/10;
+    # y el mismo cálculo un ciclo atrás (2022 desde 2018) con el resultado real, para probar el tablero.
+    mun = predecir_municipios(act, est["T"], cfg["analogia"], est["celdas"], est["terceros"])
+    chk = mun.groupby("uf")[["pt", "bolsonaro"]].sum() - est["pred"]["R"][["pt", "bolsonaro"]]
+    assert chk.abs().max().max() < 1, "el pronóstico municipal no suma lo mismo que el de la UF"
+    mun = mun.join(act[["pt_1", "bolsonaro_1", "aptos"]])
+    mun.index.name = "codigo"
+    mun.to_parquet(out / "municipios.parquet")
+    mbt = predecir_municipios(bt["act"], bt["T"], cfg["analogia_backtest"], bt["celdas"], bt["terceros"])
+    r22 = municipios_previos(2022)
+    mbt = mbt.join(r22[["pt_2", "bolsonaro_2", "aptos"]]).rename(columns={"pt_2": "pt_real", "bolsonaro_2": "bolsonaro_real"})
+    mbt.index.name = "codigo"
+    mbt.to_parquet(out / "backtest_municipios.parquet")
     log.info("2026: Lula 2ª vuelta A=%.2f R=%.2f", pred["A"], pred["R"])
 
     # Composición de los terceros por origen (nacional)

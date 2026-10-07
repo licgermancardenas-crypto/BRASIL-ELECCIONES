@@ -36,3 +36,5 @@ reports/briefs/_build_balotaje/
 data/processed/electoral/movilizacion_2026/
 reports/figures/redes/_build_carrusel_balotaje/
 data/processed/electoral/balotaje_gobernadores_2026/
+reports/tablero/
+data/processed/electoral/tablero_2v/

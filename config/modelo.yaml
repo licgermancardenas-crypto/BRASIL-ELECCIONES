@@ -174,3 +174,9 @@ balotaje:
     caiado_y_zema_con_flavio: {caiado: 0.20, otros: 0.20}
     mas_renan_con_flavio: {caiado: 0.20, otros: 0.20, renan_santos: 0.20}
     cury_con_lula: {cury: 0.65}
+
+tablero:
+  # Tablero de la noche del balotaje (src/models/tablero_2v_2026.py). Votos de
+  # "pseudo-conteo" con los que el desvío de cada UF se encoge hacia el de su
+  # región, y el de la región hacia el nacional.
+  k_votos: 200000

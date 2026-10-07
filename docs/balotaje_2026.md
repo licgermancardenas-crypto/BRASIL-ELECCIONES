@@ -111,3 +111,30 @@ matrices por UF caen en esquinas (0 o 1) con pocas unidades: queda solo como
 "señal" de hacia dónde empujan los eliminados. Montecarlo: t de Student (4 gl)
 con desvío = RMSE del ingenuo. Remontadas en 2018-2022: 6 de 26, todas con el
 líder por debajo del 60 % de los votos de los finalistas.
+
+## Pronóstico municipal y tablero de la noche (`src/models/tablero_2v_2026.py`)
+
+- `balotaje_2026` guarda `municipios.parquet` (método R por município; suma
+  exactamente lo mismo que por UF) y `backtest_municipios.parquet` (2022 desde
+  2018 con el resultado real; error medio por município 1,1 pts). El brief tiene
+  la página "municipio por municipio" con los dos mapas.
+- Tablero: cada município contado se compara con su pronóstico; el desvío se
+  promedia por UF y se encoge hacia la región y el país (`tablero.k_votos`), y
+  se proyecta sobre lo que falta contar. Incertidumbre = sd del Montecarlo ×
+  fracción de votos sin contar (piso 0,15 pts).
+- TSE 2ª vuelta: presidente elección 6258, gobernador 6260 (no existen antes
+  del 25/10; el script avisa y sigue). Lista de municípios: config de 6258 o,
+  si no está, la de 6257.
+- Prueba (`--simular-2022`): Nordeste contando tarde, lo contado de cada
+  município con desvío N(0, 4 pts) y pronóstico corrido 3 pts. Con 2 % contado
+  la proyección erra −1,6 pts (dentro de su rango); con 30 %, −0,3; lo contado
+  mostraba a Lula 5 pts abajo. Un pronóstico corrido parejo se cancela.
+- Limitación: si lo contado dentro de los municípios está sesgado de forma
+  correlacionada (todas las capitales primero), el desvío medio arrastra ese
+  sesgo hasta que entran los interiores.
+
+Noche del 25/10:
+
+    python -m src.models.tablero_2v_2026 --loop 180
+
+y abrir `reports/tablero/tablero_2v.html` (se recarga cada 60 s).
