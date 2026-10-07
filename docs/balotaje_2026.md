@@ -129,6 +129,15 @@ líder por debajo del 60 % de los votos de los finalistas.
   município con desvío N(0, 4 pts) y pronóstico corrido 3 pts. Con 2 % contado
   la proyección erra −1,6 pts (dentro de su rango); con 30 %, −0,3; lo contado
   mostraba a Lula 5 pts abajo. Un pronóstico corrido parejo se cancela.
+- Ensayo con el conteo REAL del 4/10 (`--ensayo-4-10`): el avance y el desvío
+  dentro de cada município de las fotos del 4/10 aplicados a la 2ª vuelta de
+  2022. Con 85 % contado lo contado daba Lula 49,3 % (perdiendo) y el tablero
+  50,7 ± 0,4; con 91 %, 50,8 ± 0,3; real 50,9 %. Desvío real dentro de los
+  municípios a medio contar: −0,25 pts para Lula en promedio (−0,6 en el
+  Nordeste, donde las secciones del interior entran tarde), así que la
+  proyección tiende a quedar ~0,15 pts corta para Lula a esa altura. Las fotos
+  arrancan a las 19:26 de Brasília con ~85 % contado: las dos primeras horas
+  de la noche no tienen ensayo con datos reales.
 - Limitación: si lo contado dentro de los municípios está sesgado de forma
   correlacionada (todas las capitales primero), el desvío medio arrastra ese
   sesgo hasta que entran los interiores.

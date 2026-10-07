@@ -382,14 +382,56 @@ def simular_2022(k: float, pasos: int, seed: int, sesgo_pron: float = 0.0, sesgo
     return pd.DataFrame(filas)
 
 
+def ensayo_4_10(k: float) -> pd.DataFrame:
+    """La noche de 2022 con el conteo REAL del 4/10/2026.
+
+    Para cada foto municipal del conteo de la 1ª vuelta 2026 se toma, por
+    município, el % de secciones contadas y el desvío real de lo contado
+    respecto de su resultado final (% Lula entre Lula y Flávio). Ese avance y
+    ese desvío se aplican al resultado real de la 2ª vuelta de 2022, y el
+    tablero proyecta con el pronóstico 2022 (desde 2018).
+    """
+    from src.models.conteo_2026 import RAW, SALIDA_FINAL
+    run = ultima(BALOTAJE_DIR)
+    b = pd.read_parquet(run / "backtest_municipios.parquet")
+    b = b[b["pt_real"] + b["bolsonaro_real"] > 0]
+    pron = {"run": f"{run.name} (backtest 2022)", "lula": float(b["pt"].sum() / (b["pt"] + b["bolsonaro"]).sum() * 100),
+            "sd": 1.5, "ext_p": 0.5, "ext_val": 0.0, "gob": None,
+            "mun": pd.DataFrame({"uf": b["uf"], "validos_pred": b["pt"] + b["bolsonaro"], "p": b["pt"] / (b["pt"] + b["bolsonaro"])})}
+    real = b["pt_real"].sum() / (b["pt_real"] + b["bolsonaro_real"]).sum() * 100
+    fin = pd.read_parquet(SALIDA_FINAL).set_index("codigo")
+    fin_s = fin["lula"] / (fin["lula"] + fin["flavio_bolsonaro"])
+    share22 = b["pt_real"] / (b["pt_real"] + b["bolsonaro_real"])
+    filas = []
+    for f in sorted((RAW).glob("*/municipios.json")):
+        x = pd.DataFrame(json.loads(f.read_text(encoding="utf-8"))).set_index("codigo")
+        if len(x) < 5000:          # fotos incompletas (el TSE cortaba pedidos)
+            continue
+        pct = (x["pct_secciones"] / 100).reindex(b.index).fillna(0)
+        dev = (x["lula"] / (x["lula"] + x["flavio"]).where(lambda v: v > 0) - fin_s).reindex(b.index).fillna(0)
+        sh = (share22 + dev.where(pct < 1, 0)).clip(0, 1)
+        v = (b["pt_real"] + b["bolsonaro_real"]) * pct
+        cont = pd.DataFrame({"lula": (v * sh).round(), "flavio": (v * (1 - sh)).round(), "pct": pct})
+        e = proyectar(pron, cont, (0, 0, 0), k)
+        filas.append({"foto_utc": f.parent.name, "votos_contados_pct": e["votos_contados_pct"],
+                      "lula_contado": e["lula_contado"], "lula_proyectado": e["lula_proyectado"],
+                      "rango_90": 1.645 * e["sd_pp"], "real": real,
+                      "error_contado": e["lula_contado"] - real, "error_proyectado": e["lula_proyectado"] - real})
+    return pd.DataFrame(filas)
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--loop", type=int, default=0, help="segundos entre lecturas (0 = una sola)")
     ap.add_argument("--simular-2022", action="store_true")
+    ap.add_argument("--ensayo-4-10", action="store_true", help="2022 con el orden y los desvíos reales del conteo del 4/10")
     ap.add_argument("--pasos", type=int, default=12)
     ap.add_argument("--sesgo-pronostico", type=float, default=0.0, help="pts que se le restan a Lula en el pronóstico simulado")
     args = ap.parse_args(argv)
     k = cargar_config()["tablero"]["k_votos"]
+    if args.ensayo_4_10:
+        print(ensayo_4_10(k).round(2).to_string(index=False))
+        return
     if args.simular_2022:
         r = simular_2022(k, args.pasos, 2026, sesgo_pron=args.sesgo_pronostico / 100)
         print(r.round(2).to_string(index=False))
