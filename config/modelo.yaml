@@ -108,10 +108,15 @@ encuestas:
   # pseudo-encuestas en 0. Anclado en el promedio ponderado por calidad.
   shrink_house_effect: 3
   iteraciones_house_effect: 5
-  # Sesgo medio del agregador en el backtest (2018/2022). false = solo se usa
-  # como incertidumbre (media 0); el sesgo con corrección se reporta como
-  # sensibilidad. Con 2 elecciones no hay base para corregirlo de oficio.
-  corregir_sesgo_historico: false
+  # Sesgo medio del agregador en el backtest (2018/2022). true = se suma a la
+  # media de la simulación; la variante sin corrección queda como sensibilidad.
+  # Decisión del 2026-10-07 (Germán): corregir de oficio. El 4/10/2026 el
+  # agregador volvió a subestimar al candidato bolsonarista (Flávio: 41,5 % en
+  # el agregado del 1/10, 47,0 % en el TSE, +5,5 pts; Lula +1,1), tercera
+  # elección seguida en la misma dirección. El backtest todavía mide el sesgo
+  # con 2018 y 2022: sumar 2026 a `anos_historicos` cuando el TSE publique el
+  # zip de resultados 2026 (resultado_nacional lee ese formato, no la divulgación).
+  corregir_sesgo_historico: true
 
 seccion:
   # Análisis mesa por mesa (src/models/analisis_seccion.py). Decisión del
