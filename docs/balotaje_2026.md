@@ -154,3 +154,15 @@ personas. Salida en `data/processed/electoral/perfil_reserva_2026/<fecha_utc>/`.
   municípios con más abandono son más urbanos y con más cloaca a red.
 - En el Norte la estimación da lo contrario (Lula 2,6 %, Bolsonaro 10,9 %):
   pocos municípios grandes y matriz de región, leerlo con cautela.
+
+## Noche del 25/10: guion
+
+1. Desde el inicio de la divulgación (17 h de Brasília):
+   `python -m src.models.tablero_2v_2026 --loop 180` y abrir
+   `reports/tablero/tablero_2v.html`.
+2. Piezas con la última foto del tablero:
+   `python -m src.viz.redes_noche_balotaje` → `reports/figures/redes/noche_25-10/`
+   (presidente, estados, gobernadores y sus textos). Antes del 99,5 % contado
+   dicen "proyección" y no proclaman ganador.
+3. Probar el diseño sin datos reales: `--demo` (final) o `--demo --parcial`;
+   salen con marca DEMO y no se versionan.

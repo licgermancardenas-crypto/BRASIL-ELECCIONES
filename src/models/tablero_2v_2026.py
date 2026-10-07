@@ -376,7 +376,7 @@ def simular_2022(k: float, pasos: int, seed: int, sesgo_pron: float = 0.0, sesgo
         filas.append({"paso": i, "votos_contados_pct": est["votos_contados_pct"], "lula_contado": est["lula_contado"],
                       "lula_proyectado": est["lula_proyectado"], "sd_pp": est["sd_pp"], "real": real,
                       "error_contado": (est["lula_contado"] or np.nan) - real, "error_proyectado": est["lula_proyectado"] - real})
-        if i in (2, pasos // 2):
+        if i in (2, pasos // 2, pasos):
             registrar(est, [], {"sello": f"simulacion-paso-{i:02d}", "pronostico": pron["run"], "modo": "SIMULACIÓN 2022",
                                 "hora_tse": f"paso {i} de {pasos}", "continuar": i != 2})
     return pd.DataFrame(filas)
