@@ -89,3 +89,25 @@ Salida en `data/processed/electoral/movilizacion_2026/<fecha_utc>/`. Sin encuest
 - Para empatar, la abstención tendría que bajar ~29 pp en los municípios donde
   ganó Lula en 2022 (nuevos votantes repartidos como el voto 2022 del município);
   el mayor movimiento entre vueltas observado es 0,7 pp.
+
+## Gobernadores (`src/models/balotaje_gobernadores_2026.py`)
+
+Siete UF van a 2ª vuelta el 25/10: AC, AM, DF, ES, RJ, RN, TO (TSE, elección
+estadual 6259, cargo 0003). Unidad: município × zona (divulgación por zona del
+TSE; el DF tiene 19 zonas). Salida en
+`data/processed/electoral/balotaje_gobernadores_2026/<fecha_utc>/`.
+
+Tres pronósticos, probados con los 26 balotajes de gobernador de 2018 y 2022:
+
+| Método | RMSE | Ganador correcto |
+|---|---|---|
+| Ingenuo (cada finalista conserva su proporción) | 9,4 pp | 20/26 |
+| Promedio | 10,3 pp | 18/26 |
+| Origen (eliminados según su voto presidencial) | 12,9 pp | 14/26 |
+
+Principal: ingenuo (`balotaje.gobernador_metodo`). El de origen falló en 2018
+(Zema, Witzel, Moisés crecieron por fuera de la lógica presidencial) y sus
+matrices por UF caen en esquinas (0 o 1) con pocas unidades: queda solo como
+"señal" de hacia dónde empujan los eliminados. Montecarlo: t de Student (4 gl)
+con desvío = RMSE del ingenuo. Remontadas en 2018-2022: 6 de 26, todas con el
+líder por debajo del 60 % de los votos de los finalistas.

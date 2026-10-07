@@ -33,6 +33,7 @@ import pandas as pd
 
 from src.etl.transform.base_locales import salida as salida_locales
 from src.models.balotaje_2026 import SALIDA_DIR as BALOTAJE_DIR
+from src.models.balotaje_gobernadores_2026 import SALIDA_DIR as GOBERNADORES_DIR
 from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
 from src.models.montecarlo.proyeccion_bancas import ROOT
 from src.models.movilizacion_2026 import SALIDA_DIR as MOVILIZACION_DIR
@@ -237,6 +238,23 @@ def fig_entre_vueltas(M: dict) -> None:
     guardar(f, "entre_vueltas.svg")
 
 
+def fig_gobernadores(g: pd.DataFrame) -> None:
+    d = g.sort_values("prob_A")
+    f, ax = plt.subplots(figsize=(6.4, 4.2))
+    ax.axvline(50, color=INK, lw=0.9)
+    for i, r in enumerate(d.itertuples()):
+        ax.plot([r.p5, r.p95], [i, i], color=RULE, lw=5, solid_capstyle="round", zorder=1)
+        ax.scatter(r.pct_A_2v, i, s=60, color=VIO, zorder=3, edgecolors="white", linewidths=1)
+        ax.text(r.p95 + 1, i, f"{nombre_mun(r.A)} {f1(r.pct_A_2v)} %", va="center", fontsize=8, color=INK)
+    ax.set_yticks(range(len(d)), [f"{r.uf}" for r in d.itertuples()], fontsize=9, weight="bold")
+    ax.set_ylim(-0.6, len(d) - 0.4)
+    ax.set_xlim(30, 100)
+    ax.set_xticks([30, 40, 50, 60, 70, 80])
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    limpiar(ax, grid="x")
+    guardar(f, "gobernadores.svg")
+
+
 # ---------------------------------------------------------------------------
 # Documento
 # ---------------------------------------------------------------------------
@@ -264,6 +282,8 @@ td { white-space:nowrap; }
 .fig-sens { max-height:9.6cm; }
 .fig-reserva { max-height:7.4cm; }
 .fig-ev { max-height:7cm; }
+.fig-gob { max-height:9.6cm; }
+.td-wrap td { white-space:normal; } .td-wrap td.num { white-space:nowrap; } .td-wrap table { font-size:8.2pt; }
 .cuenta { display:flex; gap:.3cm; align-items:stretch; margin:.3cm 0 .1cm; }
 .cuenta > div { flex:1; background:#FAF8FD; border-top:3px solid #5B3F99; padding:.22cm .25cm; }
 .cuenta b { display:block; font-size:16pt; }
@@ -281,6 +301,10 @@ def construir(fecha: date) -> Path:
     uf["lula_2022"] = loc22["pt_2"] / (loc22["pt_2"] + loc22["bolsonaro_2"]) * 100
     m26 = pd.read_parquet(RESULTADO_2026)
     M = json.loads((ultima(MOVILIZACION_DIR) / "resumen.json").read_text(encoding="utf-8"))
+    gob_dir = ultima(GOBERNADORES_DIR)
+    Gb = json.loads((gob_dir / "resumen.json").read_text(encoding="utf-8"))
+    Gb_uf = pd.read_csv(gob_dir / "por_uf.csv")
+    Gb_bt = pd.read_csv(gob_dir / "backtest.csv")
     t26 = m26.groupby("uf")[["cury", "renan_santos", "caiado", "zema", "otros", "validos"]].sum()
 
     pv = R["primera_vuelta"]
@@ -317,6 +341,7 @@ def construir(fecha: date) -> Path:
     fig_sensibilidad(R["sensibilidad"], quiebre, a_pond, lula)
     fig_reserva(M)
     fig_entre_vueltas(M)
+    fig_gobernadores(Gb_uf)
     if PORTADA.exists():
         shutil.copy(PORTADA, BUILD / "portada.jpg")
 
@@ -573,6 +598,67 @@ def construir(fecha: date) -> Path:
              titulo="La historia juega en contra: la 2ª vuelta suele favorecer la participación bolsonarista",
              bajada="Cambio de la abstención entre vueltas en 2018 y 2022, y dónde están los votantes que Lula podría recuperar.",
              pie="TSE por local de votación 2018 y 2022 y por município 2026. Estimaciones municipales: orden de magnitud, no conteo.")
+
+    # ================================================================ 9 · gobernadores
+    gu = Gb_uf.sort_values("prob_A", ascending=False)
+    bt_g = Gb["backtest_2018_2022"]
+    mg_ = bt_g["metodos"]
+
+    def senal(r):
+        d = r.pct_A_origen - r.pct_A_ingenuo
+        if abs(d) < 2:
+            return "neutra"
+        return "al 1º" if d > 0 else "al 2º"
+
+    filas = [[r.uf, f"{nombre_mun(r.A)} ({r.partido_A})", f1(r.pct_A_1v) + " %", f"{nombre_mun(r.B)} ({r.partido_B})",
+              f1(r.pct_B_1v) + " %", f"<b>{f1(r.pct_A_2v)} %</b>", f"<b>{pe(r.prob_A)}</b>", senal(r)]
+             for r in gu.itertuples()]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("gobernadores.svg", "fig fig-gob")
+              + fuente("Punto: % del primero en la 1ª vuelta sobre los votos de los dos finalistas en la 2ª. Barra: rango del 90 % "
+                       "de las simulaciones, con el error medido en los balotajes de 2018 y 2022.")
+              + "</div><div>"
+              + f'<div class="td-wrap">{tabla(["UF", "Primero", "1ª v.", "Segundo", "1ª v.", "2ª v.", "Gana", "Señal"], filas, num=(2, 4, 5, 6))}</div>'
+              + fuente("Señal: hacia qué finalista empuja el voto de los candidatos que quedaron afuera, según cómo votaron "
+                       "para presidente (regresión ecológica por município y zona). Es una señal, no entra en el número.")
+              + insight("<b>Cuatro favoritos:</b> Omar Aziz en AM y Mailza en AC superan el 60 % de los votos de los "
+                        "finalistas, y en 2018 y 2022 ningún líder por encima de esa marca perdió. Celina Leão en el DF y "
+                        "Pazolini en ES quedan apenas debajo, en la franja donde los líderes ganaron 4 de 6 balotajes.")
+              + insight(f"<b>RJ, abierto con ventaja de Ruas:</b> {f1(gu.set_index('uf').loc['RJ', 'pct_A_2v'])} %. Los votantes "
+                        "de los eliminados empujan levemente hacia Paes.")
+              + insight("<b>RN y TO, empates.</b> En RN el número oculta lo más importante: los votantes de Álvaro Dias (PL, "
+                        "26,7 %) habían votado a Flávio y, por esa vía, irían a Allyson y no al candidato del PT.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="9 · GOBERNADORES", titulo="Siete estados eligen gobernador en 2ª vuelta: cuatro con favorito y tres abiertos",
+             bajada="Proyección de cada balotaje estadual del 25 de octubre desde el resultado de la 1ª vuelta.",
+             pie="TSE, divulgación oficial del 4/10 por UF y por zona electoral. Sin encuestas.")
+
+    # ================================================================ 10 · gobernadores: método
+    filas_m = [["Ingenuo: cada finalista conserva su proporción", f1(mg_["ingenuo"]["rmse_pp"]), f"{mg_['ingenuo']['ganador_ok']} de {bt_g['n']}"],
+               ["Promedio de los dos", f1(mg_["promedio"]["rmse_pp"]), f"{mg_['promedio']['ganador_ok']} de {bt_g['n']}"],
+               ["Origen: los eliminados según su voto presidencial", f1(mg_["origen"]["rmse_pp"]), f"{mg_['origen']['ganador_ok']} de {bt_g['n']}"]]
+    rem = Gb_bt[Gb_bt["remontada"]]
+    filas_r = [[str(r.ano), r.uf, f1(100 - r.pct_A_1v_entre_finalistas) + " %", f1(r.real) + " %"] for r in rem.itertuples()]
+    cuerpo = ('<div class="dos-col"><div>'
+              + '<h3 class="sub">Prueba con los 26 balotajes de gobernador de 2018 y 2022</h3>'
+              + tabla(["Método", "Error (pp)", "Ganador correcto"], filas_m, num=(1, 2))
+              + fuente("Error cuadrático medio del % del ganador, en puntos. Mismas unidades que en 2026 (município × zona).")
+              + insight("<b>El método más simple es el que mejor funcionó.</b> Repartir a los eliminados según su voto presidencial "
+                        "falló en 2018, cuando Zema, Witzel y Moisés crecieron entre vueltas por fuera de esa lógica. Por eso el "
+                        "pronóstico usa el ingenuo y la señal de los eliminados queda como contexto.")
+              + insight(f"<b>La incertidumbre es grande:</b> ±{f1(mg_['ingenuo']['rmse_pp'])} puntos. Una elección de gobernador se "
+                        "mueve mucho más que la presidencial en tres semanas: alianzas, apoyos de los eliminados y el arrastre "
+                        "del candidato a presidente.")
+              + "</div><div>"
+              + f'<h3 class="sub">Remontadas: ganó el segundo de la 1ª vuelta ({len(rem)} de {bt_g["n"]})</h3>'
+              + tabla(["Año", "UF", "Líder en 1ª v.", "Ganador en 2ª v."], filas_r, num=(2, 3))
+              + fuente("Líder en 1ª v.: % del primero sobre los dos finalistas. Ganador: % del que remontó.")
+              + insight("<b>Todas las remontadas partieron de líderes por debajo del 60 %.</b> En 2026 están en esa zona "
+                        "cinco de los siete: DF y ES apenas debajo, y RJ, RN y TO por debajo del 55 %, donde en 2018 y 2022 "
+                        "los líderes ganaron 8 de 12.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="10 · GOBERNADORES", titulo="Uno de cada cuatro balotajes de gobernador se dio vuelta en 2018 y 2022",
+             bajada="Cómo se proyectan los balotajes estaduales y cuánto se equivocaron los métodos en las dos elecciones anteriores.",
+             pie="TSE, resultados por sección 2018 y 2022 agregados a município × zona.")
 
     # ================================================================ qué mirar
     acciones = [

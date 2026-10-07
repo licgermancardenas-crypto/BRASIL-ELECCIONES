@@ -166,6 +166,10 @@ balotaje:
   random_seed: 2026
   # Proporción a Lula (entre los que votan válido) que se impone a algunos
   # terceros. Supuestos para leer los apoyos declarados después del 4/10.
+  # Balotajes de gobernador (src/models/balotaje_gobernadores_2026.py): origen,
+  # ingenuo o promedio. Se elige con el backtest 2018+2022 (26 balotajes): el
+  # ingenuo acierta 20/26 ganadores (RMSE 9,4 pp), el promedio 18 y origen 14.
+  gobernador_metodo: ingenuo
   escenarios:
     caiado_y_zema_con_flavio: {caiado: 0.20, otros: 0.20}
     mas_renan_con_flavio: {caiado: 0.20, otros: 0.20, renan_santos: 0.20}
