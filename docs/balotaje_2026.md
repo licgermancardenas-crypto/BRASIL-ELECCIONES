@@ -73,3 +73,19 @@ y sin movilización (solo votos válidos, retención total).
 - La movilización 2022 (blanco y abstención hacia Bolsonaro) se supone que se
   repite; el escenario 2018 mide cuánto pesa ese supuesto.
 - No usa encuestas de 2ª vuelta. Cuando salgan, sirven de contraste.
+
+## Movilización (`src/models/movilizacion_2026.py`)
+
+Salida en `data/processed/electoral/movilizacion_2026/<fecha_utc>/`. Sin encuestas
+(decisión del 2026-10-07).
+
+- Reserva: votantes de la 2ª vuelta 2022 que no votaron el 4/10, con la misma
+  matriz de origen por UF ajustada a la abstención de cada município.
+  Resultado 2026-10-07: 5,7 M de Lula 2022 y 3,0 M de Bolsonaro 2022 (neta
+  Lula 2,6 M), contra una brecha de 6,4 M en el pronóstico: no alcanza ni con
+  el 100 % de la reserva de Lula.
+- Historia entre vueltas (2018 y 2022, por quintil de voto PT): la 2ª vuelta
+  movilizó relativamente más a las zonas bolsonaristas en los dos ciclos.
+- Para empatar, la abstención tendría que bajar ~29 pp en los municípios donde
+  ganó Lula en 2022 (nuevos votantes repartidos como el voto 2022 del município);
+  el mayor movimiento entre vueltas observado es 0,7 pp.

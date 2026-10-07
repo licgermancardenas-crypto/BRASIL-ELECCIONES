@@ -35,6 +35,7 @@ from src.etl.transform.base_locales import salida as salida_locales
 from src.models.balotaje_2026 import SALIDA_DIR as BALOTAJE_DIR
 from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
 from src.models.montecarlo.proyeccion_bancas import ROOT
+from src.models.movilizacion_2026 import SALIDA_DIR as MOVILIZACION_DIR
 from src.viz.brief_pdf import (BRIEFS, C_FLAVIO, C_LULA, CHROME, CSS_MARCA, INK, MUTED, PORTADA, RULE, VIO,
                                Documento, f0, f1, fig, fuente, insight, kpi, limpiar, pe, sg, tabla, ultima)
 
@@ -56,6 +57,13 @@ mill = lambda x: f1(x / 1e6) + " M"
 
 plt.rcParams.update({"font.family": "Arial", "svg.fonttype": "none", "axes.edgecolor": "#BBBBBB",
                      "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK})
+
+
+def nombre_mun(s: str) -> str:
+    t = s.title()
+    for p in (" De ", " Da ", " Do ", " Dos ", " Das "):
+        t = t.replace(p, p.lower())
+    return t
 
 
 def guardar(f, nombre: str) -> None:
@@ -195,6 +203,40 @@ def fig_sensibilidad(sens: list, quiebre: float, modelo: float, lula_modelo: flo
     guardar(f, "sensibilidad.svg")
 
 
+def fig_reserva(M: dict) -> None:
+    r, h = M["reserva"], M["lo_que_hace_falta"]
+    filas = [("Brecha a cerrar\n(pronóstico de balotaje)", h["brecha_votos"], INK),
+             ("Votantes de Lula 2022\nque no votaron el 4/10", r["de_lula_2022"], C_LULA),
+             ("Votantes de Bolsonaro 2022\nque no votaron el 4/10", r["de_bolsonaro_2022"], C_FLAVIO),
+             ("Reserva neta de Lula", r["neta_lula"], VIO)]
+    f, ax = plt.subplots(figsize=(6.6, 3.0))
+    for i, (n, v, c) in enumerate(filas):
+        ax.barh(i, v / 1e6, color=c, height=0.6, zorder=2)
+        ax.text(v / 1e6 + 0.1, i, mill(v), va="center", fontsize=9, color=INK, weight="bold")
+    ax.axvline(h["brecha_votos"] / 1e6, color=INK, lw=0.8, ls="--", zorder=1)
+    ax.set_yticks(range(len(filas)), [n for n, _, _ in filas], fontsize=8.5)
+    ax.set_ylim(len(filas) - 0.4, -0.6)
+    ax.set_xlim(0, 7.6)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} M")
+    limpiar(ax, grid="x")
+    guardar(f, "reserva.svg")
+
+
+def fig_entre_vueltas(M: dict) -> None:
+    h = M["entre_vueltas_historia"]
+    x = np.arange(5)
+    f, ax = plt.subplots(figsize=(6.2, 3.0))
+    ax.bar(x - 0.2, h["2018"], width=0.38, color="#C9BEE4", label="2018", zorder=2)
+    ax.bar(x + 0.2, h["2022"], width=0.38, color=VIO, label="2022", zorder=2)
+    ax.axhline(0, color=INK, lw=0.8)
+    ax.set_xticks(x, ["Q1\nmás bolsonarista", "Q2", "Q3", "Q4", "Q5\nmás petista"], fontsize=8)
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:+.1f}".replace(".", ","))
+    ax.set_ylabel("Cambio de la abstención\n1ª → 2ª vuelta (pp)", fontsize=8.5)
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    limpiar(ax)
+    guardar(f, "entre_vueltas.svg")
+
+
 # ---------------------------------------------------------------------------
 # Documento
 # ---------------------------------------------------------------------------
@@ -220,6 +262,8 @@ td { white-space:nowrap; }
 .fig-dist { max-height:9cm; }
 .fig-uf { max-height:15.4cm; }
 .fig-sens { max-height:9.6cm; }
+.fig-reserva { max-height:7.4cm; }
+.fig-ev { max-height:7cm; }
 .cuenta { display:flex; gap:.3cm; align-items:stretch; margin:.3cm 0 .1cm; }
 .cuenta > div { flex:1; background:#FAF8FD; border-top:3px solid #5B3F99; padding:.22cm .25cm; }
 .cuenta b { display:block; font-size:16pt; }
@@ -236,6 +280,7 @@ def construir(fecha: date) -> Path:
     loc22 = pd.read_parquet(salida_locales(2022)).query("uf != 'ZZ'").groupby("uf")[["pt_2", "bolsonaro_2"]].sum()
     uf["lula_2022"] = loc22["pt_2"] / (loc22["pt_2"] + loc22["bolsonaro_2"]) * 100
     m26 = pd.read_parquet(RESULTADO_2026)
+    M = json.loads((ultima(MOVILIZACION_DIR) / "resumen.json").read_text(encoding="utf-8"))
     t26 = m26.groupby("uf")[["cury", "renan_santos", "caiado", "zema", "otros", "validos"]].sum()
 
     pv = R["primera_vuelta"]
@@ -270,6 +315,8 @@ def construir(fecha: date) -> Path:
     fig_distribucion(sim, lula)
     fig_uf(uf)
     fig_sensibilidad(R["sensibilidad"], quiebre, a_pond, lula)
+    fig_reserva(M)
+    fig_entre_vueltas(M)
     if PORTADA.exists():
         shutil.copy(PORTADA, BUILD / "portada.jpg")
 
@@ -288,7 +335,7 @@ def construir(fecha: date) -> Path:
     <div class="p-meta">
       <div><span>Datos</span> resultado oficial del TSE de la 1ª vuelta, 5.571 municípios, 100 % de las secciones</div>
       <div><span>Historia</span> 1ª y 2ª vuelta 2018 y 2022 por local de votación, para estimar y probar el método</div>
-      <div><span>Modelo</span> {f0(mc['n'])} simulaciones · {fecha:%d/%m/%Y} · todavía sin encuestas de 2ª vuelta</div>
+      <div><span>Modelo</span> {f0(mc['n'])} simulaciones · {fecha:%d/%m/%Y} · sin encuestas</div>
     </div>
     <div class="p-conf">Documento de circulación restringida</div>
   </div>
@@ -313,10 +360,10 @@ def construir(fecha: date) -> Path:
          f"Caiado y Zema ya están con Flávio y Renan Santos lo da como ganador. Con esos apoyos, Lula bajaría a "
          f"{f1(esc['mas_renan_con_flavio']['lula_pct'])} %. El mejor escenario para Lula no pasa de "
          f"{f1(max(v['lula_pct'] for v in esc.values()))} %."),
-        ("Lo que puede cambiarlo está fuera de los terceros",
-         f"Más de {mill(pv['abstencion'])} no votaron el 4/10. Si la movilización de la 2ª vuelta favoreciera al PT como en "
-         f"2018 y no a Bolsonaro como en 2022, Lula sumaría {f1(esc['movilizacion_como_2018']['lula_pct'] - lula)} puntos. "
-         "Igual no alcanza."),
+        ("Tampoco alcanza con movilizar",
+         f"{mill(M['reserva']['de_lula_2022'])} de votantes de Lula de 2022 no votaron el 4/10, menos que la brecha de "
+         f"{mill(M['lo_que_hace_falta']['brecha_votos'])}, y del otro lado hay {mill(M['reserva']['de_bolsonaro_2022'])} de "
+         "votantes de Bolsonaro en la misma situación. En 2018 y 2022 la 2ª vuelta movilizó más a las zonas bolsonaristas."),
     ]
     cuerpo = ('<div class="kpis">'
               + kpi(pe(mc["prob_flavio"]), "Flávio presidente", f"Lula {pe(mc['prob_lula'])}")
@@ -468,23 +515,77 @@ def construir(fecha: date) -> Path:
                         "Ciro venía de la izquierda, el PT se llevó tanto.")
               + insight("<b>El escenario que más ayuda a Lula no es un apoyo, es la participación.</b> Si se vota como el 4/10, "
                         f"sin altas ni bajas, Lula llega a {f1(esc['sin_movilizacion']['lula_pct'])} %. Su campaña tiene que "
-                        "llevar a votar a quienes se quedaron en casa en el Nordeste.")
+                        "recuperar a sus votantes de 2022 que no fueron el 4/10, pero esa reserva tampoco alcanza (página siguiente).")
               + "</div></div>")
     D.pagina(cuerpo, kicker="6 · ESCENARIOS", titulo="Ningún escenario razonable lleva a Lula al 50 %",
              bajada="Qué pasa con los apoyos anunciados después del 4/10 y con distintos supuestos de participación.",
              pie="Los porcentajes de los escenarios de apoyo son supuestos para leer su efecto, no estimaciones.")
 
+    # ================================================================ 7 · movilización: cuánto hay
+    res, falta, part = M["reserva"], M["lo_que_hace_falta"], M["participacion"]
+    qq = part["por_quintil_lula_2022"]
+    filas = [[r, mill(v["pt_abst"]), mill(v["bolsonaro_abst"]),
+              ("+" if v["reserva_neta"] >= 0 else "−") + mill(abs(v["reserva_neta"]))]
+             for r, v in sorted(res["por_region"].items(), key=lambda kv: -kv[1]["reserva_neta"])]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("reserva.svg", "fig fig-reserva")
+              + fuente("Votantes de la 2ª vuelta de 2022 que no votaron el 4/10, según la misma regresión ecológica del "
+                       "pronóstico (2ª vuelta 2022 → 1ª vuelta 2026, por UF), ajustada a la abstención observada en cada município.")
+              + '<h3 class="sub" style="margin-top:.4cm">Dónde está la reserva</h3>'
+              + tabla(["Región", "De Lula 2022", "De Bolsonaro 2022", "Neta para Lula"], filas, num=(1, 2, 3))
+              + "</div><div>"
+              + insight(f"<b>Aunque volvieran todos, no alcanza.</b> {mill(res['de_lula_2022'])} de votantes de Lula de 2022 no "
+                        f"fueron a votar el 4/10. La brecha a cerrar es de {mill(falta['brecha_votos'])}: Lula necesitaría "
+                        f"{pe(falta['fraccion_reserva_lula_para_empatar'])} de esa reserva, y sin que vuelva ningún votante de Flávio.")
+              + insight(f"<b>Del otro lado también hay reserva:</b> {mill(res['de_bolsonaro_2022'])} de votantes de Bolsonaro "
+                        f"de 2022 tampoco votaron. La ventaja neta de Lula entre los que se quedaron en casa es de {mill(res['neta_lula'])}.")
+              + insight(f"<b>Su base ya votó.</b> En el 20 % de municípios más petistas, la abstención bajó de "
+                        f"{f1(qq[4]['abst_1v_2022'])} % en 2022 a {f1(qq[4]['abst_1v_2026'])} % el 4/10. Lula perdió votos "
+                        f"sobre todo en el Sudeste ({mill(abs(part['por_region']['Sudeste']['lula_cambio']))}) y el Sur "
+                        f"({mill(abs(part['por_region']['Sul']['lula_cambio']))}), donde la abstención subió.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="7 · MOVILIZACIÓN", titulo="La reserva de Lula existe, pero es más chica que la brecha",
+             bajada="Votantes de 2022 que no fueron a votar el 4 de octubre, según de qué lado venían.",
+             pie="Inferencia ecológica: describe territorios, no personas.")
+
+    # ================================================================ 8 · movilización: lo que dice la historia
+    top = M["top_municipios_reserva_neta"][:12]
+    filas = [[nombre_mun(t["nombre"]), t["uf"], f0(t["pt_abst"] / 1e3) + " mil", f0(t["bolsonaro_abst"] / 1e3) + " mil",
+              f0(t["reserva_neta"] / 1e3) + " mil"] for t in top]
+    hist = M["entre_vueltas_historia"]
+    cuerpo = ('<div class="dos-col"><div>' + fig("entre_vueltas.svg", "fig fig-ev")
+              + fuente("Municípios agrupados en quintiles por el voto al PT en la 2ª vuelta. Positivo: más abstención en la 2ª "
+                       "vuelta que en la 1ª.")
+              + insight("<b>En las dos últimas elecciones, la 2ª vuelta movilizó relativamente más a las zonas bolsonaristas.</b> "
+                        f"En 2018 la abstención subió {f1(hist['2018'][4])} pp en el quintil más petista contra "
+                        f"{f1(hist['2018'][0])} en el más bolsonarista; en 2022 bajó {f1(abs(hist['2022'][0]))} pp en el más "
+                        "bolsonarista y subió en el más petista.")
+              + insight(f"<b>Para empatar haría falta una baja de {f1(falta['pp_menos_abstencion_para_empatar'])} pp de la "
+                        f"abstención</b> en los {f0(falta['municipios_lula_gana_2022'])} municípios donde ganó Lula en 2022. "
+                        f"El mayor movimiento entre vueltas de los dos últimos ciclos fue de "
+                        f"{f1(falta['mayor_baja_historica_entre_vueltas_pp'])} pp.")
+              + "</div><div>"
+              + '<h3 class="sub">Los 12 municípios con más reserva neta</h3>'
+              + tabla(["Município", "UF", "De Lula 2022", "De Bolsonaro 2022", "Neta"], filas, num=(2, 3, 4))
+              + insight(f"<b>La reserva es metropolitana.</b> São Paulo capital concentra {f0(top[0]['reserva_neta'] / 1e3)} mil "
+                        "votos netos; le siguen Rio, Fortaleza y el ABC paulista.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="8 · MOVILIZACIÓN",
+             titulo="La historia juega en contra: la 2ª vuelta suele favorecer la participación bolsonarista",
+             bajada="Cambio de la abstención entre vueltas en 2018 y 2022, y dónde están los votantes que Lula podría recuperar.",
+             pie="TSE por local de votación 2018 y 2022 y por município 2026. Estimaciones municipales: orden de magnitud, no conteo.")
+
     # ================================================================ qué mirar
     acciones = [
-        ("Las primeras encuestas de 2ª vuelta",
-         f"Datafolha (8/10) y AtlasIntel (9/10). Si ponen a Lula por encima de {f1(q95)} %, el modelo estaría subestimándolo. "
-         "En 2018 y 2022, las encuestas hechas después de la 1ª vuelta erraron 2 puntos o menos."),
         ("El voto de Cury",
          f"Es el tercero más grande ({mill(terc['cury'])}) y el único neutral que no se inclina por Flávio. Si se acerca a Lula, "
          f"vale cerca de {f1(esc['cury_con_lula']['lula_pct'] - lula)} puntos."),
-        ("La participación en el Nordeste",
-         "Es la única reserva de votos de la que Lula puede sacar más de lo que necesita. Una suba de la participación en "
-         "BA, PE, CE y MA es la señal a mirar el 25/10."),
+        ("La participación en São Paulo y en las capitales del Nordeste",
+         f"Ahí está la reserva neta de Lula: {mill(M['por_uf']['SP']['reserva_neta'])} en SP, y Fortaleza, São Luís y "
+         "Salvador. Si la abstención baja ahí el 25/10 y sube en el Sur y el Centro-Oeste, el pronóstico se queda corto."),
+        ("La participación en el Sur",
+         f"Es donde más subió la abstención entre 2022 y 2026 (de {f1(M['participacion']['por_region']['Sul']['abst_1v_2022'])} "
+         f"a {f1(M['participacion']['por_region']['Sul']['abst_1v_2026'])} %) y donde Flávio saca sus márgenes más amplios. "
+         "Si ese electorado vuelve a votar como en la 2ª vuelta de 2022, la diferencia se amplía."),
         ("Minas Gerais y Pará",
          f"MG ({f1(uf.loc['MG', 'lula_pct'])} %) y PA ({f1(uf.loc['PA', 'lula_pct'])} %) son los estados grandes más parejos. "
          "Si Lula los gana con holgura, el pronóstico se está equivocando a su favor."),
@@ -505,9 +606,9 @@ def construir(fecha: date) -> Path:
               '<p>Las cifras están en votos válidos. Los rangos no son un margen de error de encuesta: combinan el error del '
               'método en 2022, la diferencia entre los dos métodos y un margen por lo que la prueba no ve.</p>'
               '<h3>Alcance</h3>'
-              '<p>No usa encuestas: todavía no hay de 2ª vuelta. Los apoyos de Caiado y Zema a Flávio están en los escenarios, '
+              '<p>No usa encuestas, por decisión de método: solo resultados oficiales. Los apoyos de Caiado y Zema a Flávio están en los escenarios, '
               'no en el pronóstico base.</p></div></div>')
-    D.pagina(cuerpo, kicker="QUÉ MIRAR HASTA EL 25 DE OCTUBRE", titulo="Cuatro señales que pueden cambiar el pronóstico",
+    D.pagina(cuerpo, kicker="QUÉ MIRAR HASTA EL 25 DE OCTUBRE", titulo="Cuatro señales para leer el 25 de octubre",
              pie=f"Atlas Analytics · {fecha_txt} · documento de circulación restringida.")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Brasil rumbo al 25 de octubre</title>'
