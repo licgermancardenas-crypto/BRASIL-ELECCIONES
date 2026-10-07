@@ -1,0 +1,537 @@
+"""
+src/viz/brief_balotaje_pdf.py
+
+Brief del balotaje presidencial (25/10/2026) en PDF con la identidad de Atlas
+Analytics: mismo formato y piezas que src/viz/brief_pdf.py.
+
+No recalcula el modelo: lee la última corrida de src/models/balotaje_2026.py
+(data/processed/electoral/balotaje_2026/) y el resultado final de la 1ª
+vuelta por município.
+
+Output: reports/briefs/ATLAS_Brasil_Brief_Balotaje_<fecha>.pdf
+        (HTML y figuras de trabajo en reports/briefs/_build_balotaje/, fuera de git)
+
+Uso:
+    python -m src.viz.brief_balotaje_pdf [--fecha 2026-10-07]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import shutil
+import subprocess
+from datetime import date
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from src.etl.transform.base_locales import salida as salida_locales
+from src.models.balotaje_2026 import SALIDA_DIR as BALOTAJE_DIR
+from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
+from src.models.montecarlo.proyeccion_bancas import ROOT
+from src.viz.brief_pdf import (BRIEFS, C_FLAVIO, C_LULA, CHROME, CSS_MARCA, INK, MUTED, PORTADA, RULE, VIO,
+                               Documento, f0, f1, fig, fuente, insight, kpi, limpiar, pe, sg, tabla, ultima)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger(__name__)
+
+BUILD = BRIEFS / "_build_balotaje"
+GRIS, GRIS_CLARO = "#8A8983", "#CFCBD6"
+TERC = {"cury": "Cury (Avante)", "renan_santos": "Renan Santos (Missão)", "caiado": "Caiado (PSD)",
+        "otros": "Zema (Novo) y otros"}
+ORIG = {"pt": ("Votó Lula", C_LULA), "bolsonaro": ("Votó Bolsonaro", C_FLAVIO),
+        "blanco_nulo": ("Blanco o nulo", GRIS), "abstencion": ("No votó", GRIS_CLARO)}
+ESC = {"caiado_y_zema_con_flavio": "Caiado y Zema con Flávio (80 % de sus votantes)",
+       "mas_renan_con_flavio": "… y además Renan Santos con Flávio",
+       "cury_con_lula": "Cury con Lula (65 % de sus votantes)",
+       "movilizacion_como_2018": "Blanco y abstención vuelven como en 2018",
+       "sin_movilizacion": "Solo votos válidos: nadie entra ni sale"}
+mill = lambda x: f1(x / 1e6) + " M"
+
+plt.rcParams.update({"font.family": "Arial", "svg.fonttype": "none", "axes.edgecolor": "#BBBBBB",
+                     "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK})
+
+
+def guardar(f, nombre: str) -> None:
+    f.savefig(BUILD / "figs" / nombre, format="svg", bbox_inches="tight", facecolor="white")
+    plt.close(f)
+
+
+# ---------------------------------------------------------------------------
+# Figuras
+# ---------------------------------------------------------------------------
+
+def fig_primera(pv: dict) -> None:
+    val = pv["validos"]
+    filas = [("Flávio Bolsonaro (PL)", pv["flavio"], C_FLAVIO), ("Lula (PT)", pv["lula"], C_LULA)] + \
+            [(TERC[k], v, GRIS) for k, v in sorted(pv["terceros"].items(), key=lambda kv: -kv[1])]
+    f, ax = plt.subplots(figsize=(6.6, 3.3))
+    for i, (n, v, c) in enumerate(filas):
+        ax.barh(i, v / val * 100, color=c, height=0.62, zorder=2)
+        ax.text(v / val * 100 + 0.6, i, f"{f1(v / val * 100)} %  ·  {mill(v)}", va="center", fontsize=8.5, color=INK)
+    ax.set_yticks(range(len(filas)), [n for n, _, _ in filas], fontsize=9)
+    ax.set_ylim(len(filas) - 0.4, -0.6)
+    ax.set_xlim(0, 62)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    limpiar(ax, grid="x")
+    guardar(f, "primera.svg")
+
+
+def fig_origen(comp: dict, votos: dict) -> None:
+    orden = sorted(comp, key=lambda k: -votos[k])
+    f, ax = plt.subplots(figsize=(7.2, 2.9))
+    for i, t in enumerate(orden):
+        x0 = 0
+        for o, (et, c) in ORIG.items():
+            w = comp[t][o] * 100
+            ax.barh(i, w, left=x0, color=c, height=0.6, edgecolor="white", linewidth=1)
+            if w >= 7:
+                ax.text(x0 + w / 2, i, f"{w:.0f}", ha="center", va="center", fontsize=8.5,
+                        color="white" if o in ("pt", "bolsonaro", "blanco_nulo") else INK, weight="bold")
+            x0 += w
+    ax.set_yticks(range(len(orden)), [f"{TERC[t]}\n{mill(votos[t])}" for t in orden], fontsize=8.5)
+    ax.set_ylim(len(orden) - 0.4, -0.6)
+    ax.set_xlim(0, 100)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.legend(handles=[plt.Rectangle((0, 0), 1, 1, color=c) for _, c in ORIG.values()],
+              labels=[e for e, _ in ORIG.values()], ncol=4, frameon=False, fontsize=8,
+              loc="upper center", bbox_to_anchor=(0.45, -0.12))
+    limpiar(ax, grid=None)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    guardar(f, "origen.svg")
+
+
+def fig_backtest(bt: pd.DataFrame) -> None:
+    f, ax = plt.subplots(figsize=(5.4, 4.6))
+    ax.plot([15, 80], [15, 80], color=INK, lw=0.8, ls="--", zorder=1)
+    for m, c, a, lab in (("A", GRIS_CLARO, 0.9, "A · analogía"), ("R", VIO, 1, "R · origen (principal)")):
+        d = bt[bt["metodo"] == m]
+        ax.scatter(d["real"], d["predicho"], s=26 if m == "R" else 18, color=c, alpha=a, zorder=3 if m == "R" else 2,
+                   label=lab, edgecolors="white", linewidths=0.6)
+    for r in bt[(bt["metodo"] == "R") & (bt["error"].abs() > 2.2)].itertuples():
+        ax.annotate(r.uf, (r.real, r.predicho), xytext=(4, -3), textcoords="offset points", fontsize=7.5, color=MUTED)
+    ax.set_xlabel("Lula real, 2ª vuelta 2022 (%)", fontsize=8.5)
+    ax.set_ylabel("Lula predicho desde la 1ª vuelta (%)", fontsize=8.5)
+    ax.set_xlim(15, 80)
+    ax.set_ylim(15, 80)
+    ax.set_aspect("equal")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    limpiar(ax, grid="both")
+    guardar(f, "backtest.svg")
+
+
+def fig_distribucion(sim: np.ndarray, media: float) -> None:
+    f, ax = plt.subplots(figsize=(7.0, 3.6))
+    bins = np.arange(40, 55.01, 0.25)
+    h, b = np.histogram(np.clip(sim, 40, 55), bins=bins)
+    centro = (b[:-1] + b[1:]) / 2
+    ax.bar(centro, h / len(sim) * 100, width=0.23, color=[C_LULA if c > 50 else C_FLAVIO for c in centro], zorder=2)
+    ax.axvline(50, color=INK, lw=1)
+    tr = ax.get_xaxis_transform()
+    ax.text(50.2, 1.03, "Lula gana →", fontsize=8.5, color=C_LULA, weight="bold", transform=tr)
+    ax.text(49.8, 1.03, "← Flávio gana", fontsize=8.5, color=C_FLAVIO, weight="bold", ha="right", transform=tr)
+    ax.axvline(media, color=MUTED, lw=1, ls=":")
+    ax.text(media - 0.15, ax.get_ylim()[1] * 0.98, f"media {f1(media)} %", ha="right", va="top", fontsize=8.5,
+            color=INK, weight="bold")
+    ax.set_xlim(41, 54)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.set_ylabel("Simulaciones", fontsize=8.5)
+    ax.set_xlabel("Lula en la 2ª vuelta (votos válidos)", fontsize=8.5)
+    limpiar(ax)
+    guardar(f, "distribucion.svg")
+
+
+def fig_uf(uf: pd.DataFrame) -> None:
+    d = uf.sort_values("lula_pct")
+    f, ax = plt.subplots(figsize=(5.6, 7.4))
+    y = np.arange(len(d))
+    ax.axvline(50, color=INK, lw=0.9)
+    for i, r in enumerate(d.itertuples()):
+        ax.plot([r.lula_2022, r.lula_pct], [i, i], color=RULE, lw=2, zorder=1)
+        ax.scatter(r.lula_2022, i, s=22, facecolors="white", edgecolors=MUTED, linewidths=1, zorder=2)
+        ax.scatter(r.lula_pct, i, s=34, color=C_LULA if r.lula_pct > 50 else C_FLAVIO, zorder=3)
+    ax.set_yticks(y, d.index, fontsize=8)
+    ax.set_ylim(-0.7, len(d) - 0.3)
+    ax.set_xlim(15, 80)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.scatter([], [], s=22, facecolors="white", edgecolors=MUTED, label="Lula 2ª vuelta 2022 (real)")
+    ax.scatter([], [], s=34, color=INK, label="Lula 2026 (pronóstico)")
+    ax.legend(frameon=False, fontsize=7.8, loc="lower right")
+    limpiar(ax, grid="x")
+    guardar(f, "uf.svg")
+
+
+def fig_sensibilidad(sens: list, quiebre: float, modelo: float, lula_modelo: float) -> None:
+    s = pd.DataFrame(sens)
+    x = np.linspace(0.25, 0.95, 50)
+    a, b = np.polyfit(s["a_lula_terceros"], s["lula_pct"], 1)
+    f, ax = plt.subplots(figsize=(6.6, 3.7))
+    ax.axhline(50, color=INK, lw=0.9)
+    ax.plot(x * 100, a * x + b, color=VIO, lw=2, zorder=2)
+    ax.scatter([modelo * 100], [lula_modelo], s=46, color=VIO, zorder=3, edgecolors="white", linewidths=1.2)
+    ax.annotate(f"Modelo: {modelo * 100:.0f} % → Lula {f1(lula_modelo)} %", (modelo * 100, lula_modelo),
+                xytext=(8, -14), textcoords="offset points", fontsize=8.5, color=INK, weight="bold")
+    ax.axvline(quiebre * 100, color=C_LULA, lw=1, ls="--")
+    ax.text(quiebre * 100 - 1, 46.0, f"Empate: {quiebre * 100:.0f} %", fontsize=8.5, color=C_LULA, ha="right", weight="bold")
+    ax.axvspan(18, 32, color="#EEEEEE", zorder=0)
+    ax.text(25, 50.6, "2022:\n~30 %", fontsize=7.5, color=MUTED, ha="center")
+    ax.axvspan(58, 68, color="#F7E1E1", zorder=0)
+    ax.text(63, 45.6, "2018:\n~63 %", fontsize=7.5, color=MUTED, ha="center")
+    ax.set_xlim(15, 95)
+    ax.set_ylim(45, 52)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0f} %")
+    ax.set_xlabel("Parte de los votantes de terceros que elige a Lula (entre los que votan a alguien)", fontsize=8.5)
+    ax.set_ylabel("Lula en la 2ª vuelta", fontsize=8.5)
+    limpiar(ax)
+    guardar(f, "sensibilidad.svg")
+
+
+# ---------------------------------------------------------------------------
+# Documento
+# ---------------------------------------------------------------------------
+
+CSS_EXTRA = """
+.kpis { margin-bottom:.8cm; }
+.kpis .kpi-v { font-size:22pt; }
+.kpi-l { font-size:9pt; } .kpi-n { font-size:8pt; }
+.tesis { gap:.75cm 1cm; }
+.t h3 { font-size:11.5pt; } .t p { font-size:9.8pt; line-height:1.42; } .t-n { font-size:19pt; }
+.insight { font-size:9.6pt; line-height:1.4; padding:.28cm .36cm; margin:.24cm 0; }
+table { font-size:9.2pt; } th { font-size:7.8pt; } td { padding:.15cm .2cm; }
+.fuente { font-size:7.6pt; }
+.reco { margin-bottom:.6cm; }
+.reco h3 { font-size:11pt; }
+.reco p { font-size:9.6pt; line-height:1.42; }
+.nota-metodo h3 { font-size:10pt; } .nota-metodo p { font-size:9.2pt; line-height:1.45; }
+h3.sub { font-size:10.5pt; margin:0 0 .2cm; }
+td { white-space:nowrap; }
+.fig-primera { max-height:8.2cm; }
+.fig-origen { max-height:8.4cm; }
+.fig-bt { max-height:12.4cm; }
+.fig-dist { max-height:9cm; }
+.fig-uf { max-height:15.4cm; }
+.fig-sens { max-height:9.6cm; }
+.cuenta { display:flex; gap:.3cm; align-items:stretch; margin:.3cm 0 .1cm; }
+.cuenta > div { flex:1; background:#FAF8FD; border-top:3px solid #5B3F99; padding:.22cm .25cm; }
+.cuenta b { display:block; font-size:16pt; }
+.cuenta span { font-size:8pt; color:#6B6480; }
+"""
+
+
+def construir(fecha: date) -> Path:
+    corrida = ultima(BALOTAJE_DIR)
+    R = json.loads((corrida / "resumen.json").read_text(encoding="utf-8"))
+    bt = pd.read_csv(corrida / "backtest.csv")
+    uf = pd.read_csv(corrida / "por_uf.csv", index_col=0)
+    sim = np.load(corrida / "lula_nacional_sim.npy")
+    loc22 = pd.read_parquet(salida_locales(2022)).query("uf != 'ZZ'").groupby("uf")[["pt_2", "bolsonaro_2"]].sum()
+    uf["lula_2022"] = loc22["pt_2"] / (loc22["pt_2"] + loc22["bolsonaro_2"]) * 100
+    m26 = pd.read_parquet(RESULTADO_2026)
+    t26 = m26.groupby("uf")[["cury", "renan_santos", "caiado", "zema", "otros", "validos"]].sum()
+
+    pv = R["primera_vuelta"]
+    val = pv["validos"]
+    terc = pv["terceros"]
+    n_terc = sum(terc.values())
+    brecha = pv["flavio"] - pv["lula"]
+    necesita = (val / 2 - pv["lula"]) / n_terc
+    mc = R["montecarlo"]
+    a_r, a_a = R["a_lula_terceros"]["R"], R["a_lula_terceros"]["A"]
+    a_pond = sum(a_r[k] * terc[k] for k in terc) / n_terc
+    comp = R["composicion_terceros_por_origen_2022"]
+    btR, btA = R["backtest_2022"]["R"], R["backtest_2022"]["A"]
+    esc = R["escenarios_apoyos"]
+    s = pd.DataFrame(R["sensibilidad"])
+    pend, ord0 = np.polyfit(s["a_lula_terceros"], s["lula_pct"], 1)
+    quiebre = (50 - ord0) / pend
+    lula = mc["lula_media"]
+    q5, q25, q50, q75, q95 = mc["lula_p5_25_50_75_95"]
+    gana_lula = uf[uf["lula_pct"] > 50].index.tolist()
+    reñidos = uf[(uf["lula_pct"] > 45) & (uf["lula_pct"] < 55)].sort_values("lula_pct")
+    voltea = uf[(uf["lula_2022"] > 50) & (uf["lula_pct"] < 50)].sort_values("lula_2022", ascending=False)
+    ret = R["retencion_2022"]
+    caiado_go = t26.loc["GO", "caiado"] / t26.loc["GO", "validos"] * 100
+
+    if BUILD.exists():
+        shutil.rmtree(BUILD)
+    (BUILD / "figs").mkdir(parents=True)
+    fig_primera(pv)
+    fig_origen(comp, terc)
+    fig_backtest(bt)
+    fig_distribucion(sim, lula)
+    fig_uf(uf)
+    fig_sensibilidad(R["sensibilidad"], quiebre, a_pond, lula)
+    if PORTADA.exists():
+        shutil.copy(PORTADA, BUILD / "portada.jpg")
+
+    marca = "Atlas Analytics · Brasil 2026"
+    D = Documento(marca)
+    fecha_txt = f"{fecha.day} de octubre de {fecha.year}"
+
+    # ================================================================ portada
+    D.paginas.append(f"""<section class="page portada">
+  <div class="p-izq">
+    <div class="p-marca">ATLAS ANALYTICS</div>
+    <h1>Brasil rumbo al 25 de octubre</h1>
+    <div class="p-sub">Brief del balotaje presidencial. A dónde van los 9 millones de votos de los terceros,
+      cuánto le falta a Lula y qué tendría que pasar para que el resultado se dé vuelta.</div>
+    <div class="p-linea"></div>
+    <div class="p-meta">
+      <div><span>Datos</span> resultado oficial del TSE de la 1ª vuelta, 5.571 municípios, 100 % de las secciones</div>
+      <div><span>Historia</span> 1ª y 2ª vuelta 2018 y 2022 por local de votación, para estimar y probar el método</div>
+      <div><span>Modelo</span> {f0(mc['n'])} simulaciones · {fecha:%d/%m/%Y} · todavía sin encuestas de 2ª vuelta</div>
+    </div>
+    <div class="p-conf">Documento de circulación restringida</div>
+  </div>
+  <div class="p-der">{'<img src="portada.jpg" alt="">' if PORTADA.exists() else ''}</div>
+</section>""")
+
+    # ================================================================ resumen
+    tesis = [
+        ("Flávio es claro favorito",
+         f"Con el resultado de la 1ª vuelta, Lula llegaría a {f1(lula)} % de los válidos. Gana en "
+         f"{pe(mc['prob_lula'])} de las simulaciones; Flávio en {pe(mc['prob_flavio'])}."),
+        ("La cuenta es cuesta arriba para Lula",
+         f"Flávio sacó {mill(brecha)} de votos más. Los terceros suman {mill(n_terc)}: aun si todos volvieran a votar, "
+         f"Lula necesitaría {pe(necesita)} de ellos. En 2022 los terceros fueron en su mayoría a Bolsonaro."),
+        ("Los terceros llegaron más desde la derecha que desde Lula",
+         f"Cerca de un tercio de los votantes de Cury, Renan Santos y Caiado había votado a Lula en 2022. "
+         f"Por eso el modelo le da a Lula {pe(a_pond)} de ellos, lejos de lo que necesita."),
+        ("El método aprobó su prueba",
+         f"Aplicado un ciclo atrás, predijo la 2ª vuelta de 2022 con {f1(abs(btR['error_nacional_pp']))} puntos de error "
+         f"nacional. El método por analogía, el que usa el sentido común, erró por {f1(btA['error_nacional_pp'])}."),
+        ("Los apoyos apuntan al mismo lado",
+         f"Caiado y Zema ya están con Flávio y Renan Santos lo da como ganador. Con esos apoyos, Lula bajaría a "
+         f"{f1(esc['mas_renan_con_flavio']['lula_pct'])} %. El mejor escenario para Lula no pasa de "
+         f"{f1(max(v['lula_pct'] for v in esc.values()))} %."),
+        ("Lo que puede cambiarlo está fuera de los terceros",
+         f"Más de {mill(pv['abstencion'])} no votaron el 4/10. Si la movilización de la 2ª vuelta favoreciera al PT como en "
+         f"2018 y no a Bolsonaro como en 2022, Lula sumaría {f1(esc['movilizacion_como_2018']['lula_pct'] - lula)} puntos. "
+         "Igual no alcanza."),
+    ]
+    cuerpo = ('<div class="kpis">'
+              + kpi(pe(mc["prob_flavio"]), "Flávio presidente", f"Lula {pe(mc['prob_lula'])}")
+              + kpi(f"{f1(lula)} %", "Lula en la 2ª vuelta", f"rango 90 %: {f1(q5)} – {f1(q95)}")
+              + kpi(mill(brecha), "ventaja de Flávio", "en la 1ª vuelta")
+              + kpi(mill(n_terc), "votos de terceros", "Cury, Renan Santos, Caiado, Zema")
+              + kpi(pe(necesita), "de ellos necesita Lula", f"el modelo le da {pe(a_pond)}")
+              + kpi(sg(btR["error_nacional_pp"]) + " pts", "error en el backtest", "2ª vuelta 2022")
+              + '</div><div class="tesis">'
+              + "".join(f'<div class="t"><div class="t-n">{i + 1}</div><div><h3>{t}</h3><p>{x}</p></div></div>'
+                        for i, (t, x) in enumerate(tesis))
+              + "</div>")
+    D.pagina(cuerpo, kicker="RESUMEN", titulo="Flávio llega al balotaje con una ventaja que los terceros no alcanzan a dar vuelta",
+             bajada="Los seis hallazgos del brief. Cada uno se desarrolla en las páginas siguientes.",
+             pie="Cifras en votos válidos (sin blancos ni nulos), como las publica el TSE.")
+
+    # ================================================================ 1 · punto de partida
+    filas = [["Flávio Bolsonaro", mill(pv["flavio"]), f1(pv["flavio"] / val * 100) + " %"],
+             ["Lula", mill(pv["lula"]), f1(pv["lula"] / val * 100) + " %"],
+             ["<b>Diferencia</b>", f"<b>{mill(brecha)}</b>", f"<b>{f1(brecha / val * 100)} pts</b>"],
+             ["Terceros (en juego)", mill(n_terc), f1(n_terc / val * 100) + " %"],
+             ["Blanco y nulo", mill(pv["blanco_nulo"]), "—"],
+             ["No votaron", mill(pv["abstencion"]), "—"]]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("primera.svg", "fig fig-primera")
+              + fuente("Resultado oficial del TSE al 100 % de las secciones, incluido el exterior. Porcentaje sobre votos válidos.")
+              + '<div class="cuenta">'
+              + f'<div><b>{mill(val / 2 - pv["lula"])}</b><span>votos que le faltan a Lula para el 50 %, si votan los mismos</span></div>'
+              + f'<div><b>{mill(val / 2 - pv["flavio"])}</b><span>votos que le faltan a Flávio</span></div>'
+              + f'<div><b>{pe(necesita)}</b><span>de los terceros que Lula necesita llevarse</span></div>'
+              + "</div></div><div>"
+              + tabla(["", "Votos", "% válidos"], filas, num=(1, 2))
+              + insight(f"<b>Flávio está a {f1((val / 2 - pv['flavio']) / val * 100)} puntos del 50 %.</b> Le alcanza con "
+                        f"{pe(1 - necesita)} de los votos de terceros, o con que una parte se quede en casa.")
+              + insight(f"<b>Los terceros no son un bloque.</b> Cury compitió por el espacio del gobierno, Caiado desde la "
+                        f"centroderecha (sacó {f1(caiado_go)} % en Goiás) y Renan Santos y Zema desde la derecha antipetista.")
+              + insight(f"<b>La otra reserva son los que no votaron:</b> {mill(pv['abstencion'])} de electores, más "
+                        f"{mill(pv['blanco_nulo'])} de blancos y nulos. Una diferencia chica en quién vuelve a votar mueve "
+                        "más que cualquier apoyo.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="1 · EL PUNTO DE PARTIDA", titulo=f"Flávio ganó la 1ª vuelta por {mill(brecha)} de votos",
+             bajada="Resultado del 4 de octubre y la cuenta que tiene que hacer cada candidato para llegar al 50 %.",
+             pie="TSE, divulgación oficial por município y por UF (elección 6257).")
+
+    # ================================================================ 2 · de dónde vienen los terceros
+    filas = [[TERC[k], mill(terc[k]), pe(a_r[k]), pe(a_a[k])] for k in sorted(terc, key=lambda k: -terc[k])]
+    filas.append(["<b>Total ponderado</b>", f"<b>{mill(n_terc)}</b>", f"<b>{pe(a_pond)}</b>",
+                  f"<b>{pe(sum(a_a[k] * terc[k] for k in terc) / n_terc)}</b>"])
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("origen.svg", "fig fig-origen")
+              + fuente("Qué votó en la 2ª vuelta de 2022 cada electorado de tercero de 2026. Regresión ecológica con "
+                       "restricciones entre municípios, por UF (las UF con menos de 80 municípios usan la de su región).")
+              + insight("<b>Cómo se lee:</b> de cada 100 votantes de Cury, 34 habían votado a Lula en 2022 y 44 a Bolsonaro; "
+                        "el resto había votado en blanco o no había ido. Lo mismo para cada candidato.")
+              + "</div><div>"
+              + '<h3 class="sub">Parte que iría a Lula (entre los que votan a alguien)</h3>'
+              + tabla(["Tercero", "Votos", "Por origen", "Por analogía"], filas, num=(1, 2, 3))
+              + fuente("Por origen: cada votante vuelve al lado que eligió en 2022. Por analogía: reparte como su análogo de "
+                       "2022 (Cury como Ciro, Caiado como Tebet, el resto como los demás candidatos de 2022).")
+              + insight(f"<b>Caiado es el que más se acerca a una mitad y mitad</b> ({pe(a_r['caiado'])} a Lula): su electorado "
+                        "venía en partes iguales de los dos lados. Pero ya anunció su apoyo a Flávio, y eso no está en el "
+                        "pronóstico base.")
+              + insight(f"<b>Ninguno llega al {pe(necesita)} que necesita Lula.</b> El más favorable es Caiado, y aun Cury, "
+                        f"el más cercano al gobierno, queda en {pe(a_r['cury'])}.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="2 · A DÓNDE VAN LOS TERCEROS",
+             titulo="Los votantes de los terceros venían más del bolsonarismo que de Lula",
+             bajada="Origen 2022 de cada electorado de tercero y la parte que iría a Lula en la 2ª vuelta.",
+             pie="Inferencia ecológica: describe territorios, no personas. Los electorados chicos (Zema y otros) son los más inciertos.")
+
+    # ================================================================ 3 · backtest
+    filas = [["A · analogía", f1(btA["lula_predicho"]) + " %", f1(btA["lula_real"]) + " %", sg(btA["error_nacional_pp"]),
+              f1(btA["mae_uf_pp"])],
+             ["<b>R · origen</b>", f"<b>{f1(btR['lula_predicho'])} %</b>", f1(btR["lula_real"]) + " %",
+              f"<b>{sg(btR['error_nacional_pp'])}</b>", f"<b>{f1(btR['mae_uf_pp'])}</b>"]]
+    bta = R["backtest_2022"]["a_lula_terceros"]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("backtest.svg", "fig fig-bt")
+              + fuente("Cada punto es una UF. Sobre la diagonal, el método acierta. Se estimó con la 2ª vuelta de 2018 y la "
+                       "1ª de 2022, sin mirar el resultado que había que predecir.")
+              + "</div><div>"
+              + tabla(["Método", "Lula predicho", "Real", "Error nacional", "Error medio por UF"], filas, num=(1, 2, 3, 4))
+              + insight(f"<b>Usar el voto anterior funciona; usar el parecido entre candidatos, no.</b> En 2018 los votantes "
+                        f"de Ciro fueron casi todos a Haddad, y la analogía le dio a Lula {pe(bta['A']['ciro'])} de los de "
+                        f"Ciro en 2022. Por su origen, el modelo dijo {pe(bta['R']['ciro'])}, y acertó más.")
+              + insight(f"<b>Por eso el pronóstico usa el método por origen.</b> Erró {f1(abs(btR['error_nacional_pp']))} "
+                        f"puntos a nivel nacional y {f1(btR['mae_uf_pp'])} en promedio por estado.")
+              + insight("<b>Es una sola prueba.</b> Un error nacional tan chico puede tener algo de suerte. Por eso la "
+                        "incertidumbre del pronóstico es bastante más amplia que ese error.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="3 · CÓMO SABEMOS QUE FUNCIONA",
+             titulo=f"El método predijo la 2ª vuelta de 2022 con {f1(abs(btR['error_nacional_pp']))} puntos de error",
+             bajada="Prueba hacia atrás: con la 2ª vuelta de 2018 y la 1ª de 2022, ¿qué habría dicho el modelo del balotaje de 2022?",
+             pie="TSE, resultados por local de votación 2018 y 2022, agregados a município.")
+
+    # ================================================================ 4 · pronóstico
+    filas = [["Lula en la 2ª vuelta (media)", f1(lula) + " %"],
+             ["Rango del 50 % central", f"{f1(q25)} – {f1(q75)} %"],
+             ["Rango del 90 %", f"{f1(q5)} – {f1(q95)} %"],
+             ["<b>Flávio presidente</b>", f"<b>{pe(mc['prob_flavio'])}</b>"],
+             ["Lula presidente", pe(mc["prob_lula"])]]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("distribucion.svg", "fig fig-dist")
+              + fuente(f"{f0(mc['n'])} simulaciones. Rojo: Lula supera el 50 %. Azul: gana Flávio.")
+              + "</div><div>"
+              + tabla(["Pronóstico", "Valor"], filas, num=(1,))
+              + insight(f"<b>Lula pierde en 24 de cada 25 simulaciones.</b> Para ganar necesita que todo salga mal para "
+                        "el modelo a la vez y en su favor.")
+              + insight(f"<b>Ni Lula ni Flávio retienen todo.</b> En 2022, cerca de {pe(1 - ret['pt']['pt'])} de los "
+                        "votantes de Lula de la 1ª vuelta no volvieron a votarlo, contra menos del 1 % de los de Bolsonaro, y "
+                        "los que habían votado en blanco o no habían ido volvieron más hacia Bolsonaro. El modelo supone que "
+                        "eso se repite.")
+              + insight(f"<b>La incertidumbre es deliberadamente amplia:</b> ±{f1(mc['sd_nacional_pp'])} puntos de desvío "
+                        "nacional, con colas gruesas, por lo que no se ve en una sola elección de prueba: campaña, debates, "
+                        "quién vuelve a votar.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="4 · EL PRONÓSTICO", titulo=f"Lula llegaría a {f1(lula)} %: Flávio gana en {pe(mc['prob_flavio'])} de los casos",
+             bajada="Distribución del voto de Lula en la 2ª vuelta, en votos válidos, según el resultado de la 1ª.",
+             pie="Shock nacional t de Student (4 gl) y shock por UF calibrado con el error por estado del backtest.")
+
+    # ================================================================ 5 · estados
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("uf.svg", "fig fig-uf") + "</div><div>"
+              + insight(f"<b>Lula gana en {len(gana_lula)} estados</b>: {', '.join(gana_lula)}. Es el Nordeste completo y nada "
+                        "más: en 2022 había ganado además en el Norte y en Minas Gerais.")
+              + insight("<b>Los estados en juego:</b> "
+                        + ", ".join(f"{u} ({f1(r.lula_pct)} %)" for u, r in reñidos.iterrows())
+                        + ". Ninguno define la elección por sí solo: la diferencia está repartida en todo el país.")
+              + (insight("<b>Los que Lula ganó en 2022 y ahora perdería:</b> "
+                         + ", ".join(f"{u} ({f1(r.lula_2022)} → {f1(r.lula_pct)} %)" for u, r in voltea.iterrows())
+                         + ". Minas Gerais repite su papel: el que gana ahí gana Brasil.") if len(voltea) else "")
+              + insight(f"<b>São Paulo pesa más que cualquier swing.</b> Con Lula en {f1(uf.loc['SP', 'lula_pct'])} %, Flávio "
+                        f"saca allí una ventaja de {mill(uf.loc['SP', 'bolsonaro'] - uf.loc['SP', 'pt'])} de votos: "
+                        f"{pe((uf.loc['SP', 'bolsonaro'] - uf.loc['SP', 'pt']) / (uf['bolsonaro'].sum() - uf['pt'].sum()))} "
+                        "de su diferencia nacional.")
+              + fuente("Puntos: pronóstico 2026 (rojo si gana Lula, azul si gana Flávio). Círculo vacío: resultado real de Lula "
+                       "en la 2ª vuelta de 2022.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="5 · ESTADO POR ESTADO", titulo="El mapa de 2022 se corre hacia Flávio en casi todas partes",
+             bajada="Voto de Lula en la 2ª vuelta por UF: pronóstico 2026 contra el resultado real de 2022.",
+             pie="El exterior suma al total nacional pero no se muestra.")
+
+    # ================================================================ 6 · escenarios
+    filas = [[ESC[k], f1(v["lula_pct"]) + " %", sg(v["lula_pct"] - lula)] for k, v in esc.items()]
+    filas.insert(0, ["<b>Pronóstico base</b>", f"<b>{f1(lula)} %</b>", "—"])
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("sensibilidad.svg", "fig fig-sens")
+              + fuente("Línea: voto de Lula si todos los terceros fueran a él en la proporción del eje, con la retención y "
+                       "movilización de 2022. Bandas: lo que hicieron los terceros en 2022 (a Bolsonaro) y en 2018 (a Haddad), "
+                       "según el resultado.")
+              + "</div><div>"
+              + tabla(["Escenario", "Lula", "Cambio"], filas, num=(1, 2))
+              + insight(f"<b>Lula necesita que {quiebre * 100:.0f} % de los terceros lo elijan.</b> Es más que el 63 % de la "
+                        "cuenta simple, porque en 2022 la 2ª vuelta movilizó más a Bolsonaro que al PT. Ni en 2018, cuando "
+                        "Ciro venía de la izquierda, el PT se llevó tanto.")
+              + insight("<b>El escenario que más ayuda a Lula no es un apoyo, es la participación.</b> Si se vota como el 4/10, "
+                        f"sin altas ni bajas, Lula llega a {f1(esc['sin_movilizacion']['lula_pct'])} %. Su campaña tiene que "
+                        "llevar a votar a quienes se quedaron en casa en el Nordeste.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="6 · ESCENARIOS", titulo="Ningún escenario razonable lleva a Lula al 50 %",
+             bajada="Qué pasa con los apoyos anunciados después del 4/10 y con distintos supuestos de participación.",
+             pie="Los porcentajes de los escenarios de apoyo son supuestos para leer su efecto, no estimaciones.")
+
+    # ================================================================ qué mirar
+    acciones = [
+        ("Las primeras encuestas de 2ª vuelta",
+         f"Datafolha (8/10) y AtlasIntel (9/10). Si ponen a Lula por encima de {f1(q95)} %, el modelo estaría subestimándolo. "
+         "En 2018 y 2022, las encuestas hechas después de la 1ª vuelta erraron 2 puntos o menos."),
+        ("El voto de Cury",
+         f"Es el tercero más grande ({mill(terc['cury'])}) y el único neutral que no se inclina por Flávio. Si se acerca a Lula, "
+         f"vale cerca de {f1(esc['cury_con_lula']['lula_pct'] - lula)} puntos."),
+        ("La participación en el Nordeste",
+         "Es la única reserva de votos de la que Lula puede sacar más de lo que necesita. Una suba de la participación en "
+         "BA, PE, CE y MA es la señal a mirar el 25/10."),
+        ("Minas Gerais y Pará",
+         f"MG ({f1(uf.loc['MG', 'lula_pct'])} %) y PA ({f1(uf.loc['PA', 'lula_pct'])} %) son los estados grandes más parejos. "
+         "Si Lula los gana con holgura, el pronóstico se está equivocando a su favor."),
+    ]
+    cuerpo = ('<div class="dos-col"><div>'
+              + "".join(f'<div class="reco"><div class="r-n">{i + 1}</div><div><h3>{t}</h3><p>{x}</p></div></div>'
+                        for i, (t, x) in enumerate(acciones))
+              + '</div><div class="nota-metodo">'
+              '<h3>De dónde sale cada cosa</h3>'
+              '<p><b>El resultado.</b> Divulgación oficial del TSE del 4/10 al 100 % de las secciones, por município, con padrón, '
+              'abstención, blancos y nulos.</p>'
+              '<p><b>Las transferencias.</b> Regresión ecológica con restricciones: compara en qué municípios creció cada tercero '
+              'con cómo había votado cada município en la 2ª vuelta de 2022. Da proporciones por grupo, no por persona.</p>'
+              '<p><b>Lo que pasa con el resto.</b> Cuántos votantes de Lula y de Flávio vuelven, y cuántos de los que votaron en '
+              'blanco o no fueron votan en la 2ª, sale de la matriz 1ª → 2ª vuelta de 2022 por estado, estimada sobre 92.000 '
+              'locales de votación.</p>'
+              '<h3>Cómo leer los números</h3>'
+              '<p>Las cifras están en votos válidos. Los rangos no son un margen de error de encuesta: combinan el error del '
+              'método en 2022, la diferencia entre los dos métodos y un margen por lo que la prueba no ve.</p>'
+              '<h3>Alcance</h3>'
+              '<p>No usa encuestas: todavía no hay de 2ª vuelta. Los apoyos de Caiado y Zema a Flávio están en los escenarios, '
+              'no en el pronóstico base.</p></div></div>')
+    D.pagina(cuerpo, kicker="QUÉ MIRAR HASTA EL 25 DE OCTUBRE", titulo="Cuatro señales que pueden cambiar el pronóstico",
+             pie=f"Atlas Analytics · {fecha_txt} · documento de circulación restringida.")
+
+    html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Brasil rumbo al 25 de octubre</title>'
+            f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}</style></head><body>{"".join(D.paginas)}</body></html>')
+    (BUILD / "brief.html").write_text(html, encoding="utf-8")
+
+    chrome = next((c for c in CHROME if Path(c).exists()), None)
+    if chrome is None:
+        raise FileNotFoundError("No se encontró Chrome/Edge para imprimir el PDF")
+    pdf = BRIEFS / f"ATLAS_Brasil_Brief_Balotaje_{fecha:%Y-%m-%d}.pdf"
+    r = subprocess.run([chrome, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", f"--print-to-pdf={pdf}",
+                        (BUILD / "brief.html").as_uri()], capture_output=True, text=True)
+    if r.returncode != 0 or not pdf.exists():
+        raise RuntimeError(f"Chrome no generó el PDF: {r.stderr[-500:]}")
+    log.info("PDF %s (%d páginas) · corrida %s", pdf.relative_to(ROOT).as_posix(), len(D.paginas), corrida.name)
+    return pdf
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fecha", type=date.fromisoformat, default=date.today())
+    args = parser.parse_args(argv)
+    construir(args.fecha)
+
+
+if __name__ == "__main__":
+    main()
