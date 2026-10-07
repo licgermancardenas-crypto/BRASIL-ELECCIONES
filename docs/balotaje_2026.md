@@ -175,3 +175,17 @@ personas. Salida en `data/processed/electoral/perfil_reserva_2026/<fecha_utc>/`.
    dicen "proyección" y no proclaman ganador.
 3. Probar el diseño sin datos reales: `--demo` (final) o `--demo --parcial`;
    salen con marca DEMO y no se versionan.
+
+## Robustez (`src/models/robustez_balotaje_2026.py`)
+
+`--n-boot 200` (~9 min). Corrida del 2026-10-07:
+
+- Bootstrap (municípios y locales remuestreados dentro de cada UF, matrices
+  reestimadas): sd 0,11 pts; 90 % entre 47,2 y 47,6 %.
+- Métodos: origen 1ª vuelta 2022 encadenado con T22 (R1) 47,4 %; analogía
+  47,1 %; matriz propia en todas las UF 47,3 %; matriz regional en todas 47,4 %.
+- Supuestos: retorno de los terceros a su lado de 2022 del 80 % / 60 % → 47,4 /
+  47,5 %; movilización como en 2018 48,3 % (P 9 %); sin movilización 48,5 %
+  (P 12 %). Piso de incertidumbre 1 / 2 pts → P(Lula) 1 % / 6 %.
+- Conclusión: el método casi no mueve el número; lo que pesa es qué pasa con la
+  participación entre vueltas. Página "¿Cuánto aguanta el número?" en el brief.

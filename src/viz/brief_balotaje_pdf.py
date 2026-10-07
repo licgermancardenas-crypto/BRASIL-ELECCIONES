@@ -38,6 +38,7 @@ from src.models.conteo_2026 import SALIDA_FINAL as RESULTADO_2026
 from src.models.montecarlo.proyeccion_bancas import ROOT
 from src.models.movilizacion_2026 import SALIDA_DIR as MOVILIZACION_DIR
 from src.models.perfil_reserva_2026 import SALIDA_DIR as PERFIL_DIR
+from src.models.robustez_balotaje_2026 import SALIDA_DIR as ROBUSTEZ_DIR
 import src.viz.carrusel_linkedin as cl
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm, to_hex
 from src.viz.post_pronostico import cargar_municipios
@@ -285,6 +286,26 @@ def fig_abandono(P: dict) -> None:
     guardar(f, "abandono.svg")
 
 
+def fig_robustez(RB: dict) -> None:
+    v = pd.DataFrame(RB["variantes"])
+    v = v[v["grupo"] != "incertidumbre"].iloc[::-1].reset_index(drop=True)
+    col = {"base": VIO, "método": "#2A78D6", "supuesto": "#C98A1B"}
+    f, ax = plt.subplots(figsize=(6.6, 3.9))
+    b = RB["bootstrap"]
+    ax.axvspan(b["p5_p50_p95"][0], b["p5_p50_p95"][2], color=RULE, alpha=0.7, zorder=0)
+    ax.axvline(50, color=INK, lw=1)
+    for i, r in v.iterrows():
+        ax.scatter(r.lula_pct, i, s=48, color=col[r.grupo], zorder=3, edgecolors="white", linewidths=1)
+        ax.text(r.lula_pct + 0.08, i, f1(r.lula_pct), va="center", fontsize=8, color=INK)
+    ax.set_yticks(range(len(v)), v["variante"], fontsize=8)
+    ax.set_xlim(46.5, 50.4)
+    ax.set_xticks([47, 48, 49, 50])
+    ax.xaxis.set_major_formatter(lambda x, _: f"{x:.0f} %")
+    ax.text(50.05, len(v) - 0.6, "50 %", fontsize=8, color=INK)
+    limpiar(ax, grid="x")
+    guardar(f, "robustez.svg")
+
+
 def fig_gobernadores(g: pd.DataFrame) -> None:
     d = g.sort_values("prob_A")
     f, ax = plt.subplots(figsize=(6.4, 4.2))
@@ -330,6 +351,7 @@ td { white-space:nowrap; }
 .fig-reserva { max-height:7.4cm; }
 .fig-ev { max-height:7cm; }
 .fig-gob { max-height:9.6cm; }
+.fig-rob { max-height:9.4cm; }
 .fig-aband { max-height:6.6cm; }
 .mapas { display:flex; gap:.5cm; }
 .mapas > div { flex:1; } .mapas img { width:100%; max-height:11.2cm; object-fit:contain; }
@@ -394,6 +416,8 @@ def construir(fecha: date) -> Path:
     fig_reserva(M)
     fig_entre_vueltas(M)
     fig_gobernadores(Gb_uf)
+    RB = json.loads((ultima(ROBUSTEZ_DIR) / "resumen.json").read_text(encoding="utf-8"))
+    fig_robustez(RB)
     PR = json.loads((ultima(PERFIL_DIR) / "resumen.json").read_text(encoding="utf-8"))
     fig_abandono(PR)
     mun_pred = pd.read_parquet(corrida / "municipios.parquet")
@@ -560,6 +584,33 @@ def construir(fecha: date) -> Path:
     D.pagina(cuerpo, kicker="4 · EL PRONÓSTICO", titulo=f"Lula llegaría a {f1(lula)} %: Flávio gana en {pe(mc['prob_flavio'])} de los casos",
              bajada="Distribución del voto de Lula en la 2ª vuelta, en votos válidos, según el resultado de la 1ª.",
              pie="Shock nacional t de Student (4 gl) y shock por UF calibrado con el error por estado del backtest.")
+
+    # ================================================================ 4b · robustez
+    vb = pd.DataFrame(RB["variantes"])
+    bs = RB["bootstrap"]
+    inc = vb[vb["grupo"] == "incertidumbre"]
+    filas = [[r.variante, f1(r.lula_pct) + " %", pe(r.prob_lula)] for r in vb[vb["grupo"] != "incertidumbre"].itertuples()]
+    filas_i = [[r.variante, pe(r.prob_lula)] for r in inc.itertuples()]
+    no_mov = vb[vb["grupo"] != "incertidumbre"]
+    peor = no_mov.loc[no_mov["prob_lula"].idxmax()]
+    cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("robustez.svg", "fig fig-rob")
+              + fuente(f"Punto: % de Lula en cada variante (violeta: pronóstico; azul: otro método; ocre: otro supuesto). "
+                       f"Banda gris: 90 % de {bs['n']} réplicas de bootstrap (municipios y locales remuestreados dentro de cada estado).")
+              + insight(f"<b>El error de estimación es chico:</b> el bootstrap mueve el pronóstico ±{f1(bs['sd'])} pts "
+                        f"(90 %: {f1(bs['p5_p50_p95'][0])} a {f1(bs['p5_p50_p95'][2])} %). Lo que domina la incertidumbre no es "
+                        "la muestra, es qué pasa entre vueltas.")
+              + "</div><div>"
+              + tabla(["Variante", "Lula", "P(Lula)"], filas, num=(1, 2))
+              + tabla(["Forma de la incertidumbre", "P(Lula)"], filas_i, num=(1,))
+              + insight(f"<b>Ninguna variante pasa de {f1(RB['rango_variantes'][1])} %.</b> Cambiar el método (otra "
+                        "identificación del origen, más o menos agrupamiento por región, analogía) mueve el número menos de "
+                        "medio punto. El supuesto que más pesa es la movilización: "
+                        f"con '{peor.variante.lower()}' la probabilidad de Lula sube a {pe(peor.prob_lula)}.")
+              + "</div></div>")
+    D.pagina(cuerpo, kicker="4 · ¿CUÁNTO AGUANTA EL NÚMERO?",
+             titulo=f"Con otros métodos y supuestos, Lula queda entre {f1(RB['rango_variantes'][0])} y {f1(RB['rango_variantes'][1])} %",
+             bajada="El pronóstico recalculado con remuestreo de los datos, otros métodos de inferencia y otros supuestos.",
+             pie="Cada P(Lula) usa el esquema del Montecarlo: shock nacional t de Student (4 gl) con el desvío indicado.")
 
     # ================================================================ 5 · estados
     cuerpo = ('<div class="dos-col dos-col-55"><div>' + fig("uf.svg", "fig fig-uf") + "</div><div>"
