@@ -72,7 +72,7 @@ y sin movilización (solo votos válidos, retención total).
   ruidosos.
 - La movilización 2022 (blanco y abstención hacia Bolsonaro) se supone que se
   repite; el escenario 2018 mide cuánto pesa ese supuesto.
-- No usa encuestas de 2ª vuelta. Cuando salgan, sirven de contraste.
+- No usa encuestas de 2ª vuelta, por decisión de método (2026-10-07).
 
 ## Movilización (`src/models/movilizacion_2026.py`)
 
