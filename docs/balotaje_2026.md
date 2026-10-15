@@ -252,6 +252,18 @@ Brief del 15/10: `reports/briefs/ATLAS_Brasil_Brief_Balotaje_2026-10-15.pdf`
 (21 páginas; nuevas: encuestas, lo que dicen los votantes, dónde se decide ×2,
 caminos al 50 %).
 
+## Anexo: los 5.571 municípios (`src/viz/anexo_municipios_pdf.py`)
+
+Lista completa de quién ganó cada município el 4/10, con el ganador de la 2ª
+vuelta de 2022 y la proyección del modelo para el 25/10, agrupada por estado.
+Salidas: `reports/briefs/ATLAS_Brasil_Municipios_<fecha>.pdf` (73 páginas) y
+`.xlsx` (todos los candidatos, filtrable, con resumen por UF). Al 4/10: Flávio
+ganó 2.908 municípios y Lula 2.663; 462 cambiaron de ganador respecto de 2022
+(461 de Lula a Flávio). Nombres de la correspondencia TSE–IBGE; Boa Esperança
+do Norte (MT, creado en 2023) se completa a mano.
+
+    python -m src.viz.anexo_municipios_pdf --fecha 2026-10-15
+
 ## Ensayo del 15/10
 
 El TSE ya publica los archivos de la elección 6258 en cero (generados el
