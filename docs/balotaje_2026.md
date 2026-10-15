@@ -264,6 +264,18 @@ do Norte (MT, creado en 2023) se completa a mano.
 
     python -m src.viz.anexo_municipios_pdf --fecha 2026-10-15
 
+## Hallazgos: redes e informe formal (15/10)
+
+- `src/viz/redes_hallazgos_balotaje.py`: post de Instagram "5 datos" y carrusel
+  de LinkedIn de 9 láminas (`reports/figures/redes/post_hallazgos_<fecha>.jpg`,
+  `ATLAS_carrusel_hallazgos_<fecha>.pdf` + JPG), con los textos en `.txt`.
+- `src/viz/informe_hallazgos_pdf.py`: informe formal de 9 páginas
+  (`reports/briefs/ATLAS_Brasil_Hallazgos_Balotaje_<fecha>.pdf`). Reusa
+  figuras del brief: correr antes `src.viz.brief_balotaje_pdf` con la misma fecha.
+
+    python -m src.viz.redes_hallazgos_balotaje --fecha 2026-10-15
+    python -m src.viz.informe_hallazgos_pdf --fecha 2026-10-15
+
 ## Ensayo del 15/10
 
 El TSE ya publica los archivos de la elección 6258 en cero (generados el

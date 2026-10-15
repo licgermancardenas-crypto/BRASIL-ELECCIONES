@@ -1,0 +1,19 @@
+A diez días del balotaje en Brasil, junté todo lo que analizamos en Atlas en siete hallazgos.
+
+1. Dos métodos independientes dan lo mismo. Nuestro modelo, que solo usa resultados oficiales del TSE, deja a Lula en 47,3% de los votos válidos. El promedio de las 10 encuestas publicadas después del 4/10, que el modelo no usa, da 47,9%. Flávio Bolsonaro gana en el 96% de las simulaciones.
+
+2. Las encuestas de balotaje no tienen un sesgo fijo. A diez días de la elección, en 2018 subestimaban al PT por 4,8 puntos y en 2022 lo sobreestimaban por 1,4. No se corrige: es incertidumbre.
+
+3. El mapa se corrió. 461 municipios pasaron de Lula a Flávio desde 2022; en sentido contrario, uno solo. Lula ganó 2.663 municipios el 4/10, pero ahí vive solo el 43% del padrón.
+
+4. Los terceros se compensan entre sí. Lo que más mueve es la retención: en 2022, el 2,7% de los votantes de Lula de la 1ª vuelta no fue al balotaje, contra el 0,1% de los de Bolsonaro. Retener como Flávio vale +0,6 puntos.
+
+5. Flávio construye su ventaja en las ciudades medianas: las de 100 a 500 mil electores le dan el 76% de su margen. Lula gana en los pueblos chicos.
+
+6. Uno de cada cuatro votos en juego está en São Paulo, y ahí Flávio saca 4,4 M de ventaja.
+
+7. La noche del 25, mirar Minas Gerais. Si Lula pasa del 48,3% en MG, la elección está abierta.
+
+En el carrusel están los gráficos y el método.
+
+#Brasil2026 #AnálisisElectoral #DatosAbiertos #Elecciones
