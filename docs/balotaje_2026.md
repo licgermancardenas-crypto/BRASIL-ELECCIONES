@@ -276,6 +276,31 @@ do Norte (MT, creado en 2023) se completa a mano.
     python -m src.viz.redes_hallazgos_balotaje --fecha 2026-10-15
     python -m src.viz.informe_hallazgos_pdf --fecha 2026-10-15
 
+## Sexo y edad (`src/models/genero_edad_balotaje_2026.py`, 15/10)
+
+El voto es secreto: no hay votos oficiales por sexo o edad. Oficial (TSE): padrón
+(`padron`) y comparecencia por perfil (`comparecencia_perfil`), 2022 y 2026.
+Preferencias: cortes de encuestas cargados a mano en
+`config/encuestas_segmentos_2026.yaml`, como control.
+
+- Brecha de género (Lula válidos, mujeres − hombres): +16,1 pts en promedio
+  (Indexa 9,7; Palver 19,2; Nexus 19,4) contra +5 en 2022 (Datafolha).
+- Padrón 2026: 52,8 % mujeres; 60+ subió de 21,1 % a 23,7 %, 16–24 bajó de
+  13,8 % a 12,1 %. El 4/10 votaron 80,1 % de las mujeres y 78,1 % de los hombres;
+  60+ pasó de 65,5 % (1ª 2022) a 70,5 %.
+- Composición de la participación: si cambia entre vueltas como en 2022, Lula
+  se mueve menos de 0,1 pt. No define el balotaje.
+- **Inferencia ecológica (Goodman por município) descartada el 2026-10-15:**
+  contra 2022 da brecha de género +80 pts (Datafolha +5) y jóvenes +456 pts.
+  El % de mujeres casi no varía entre municípios (desvío 1,9 pts) y la edad va
+  con región e ingreso. Se informa como resultado negativo; no se usa.
+- Boa Esperança do Norte (MT): código TSE 73709 (del padrón 2026).
+- La 1ª corrida lee ~1 GB de zips y guarda un agregado `.parquet` junto a cada
+  zip (en `data/raw/`, ignorado); las siguientes tardan segundos.
+
+    python -m src.models.genero_edad_balotaje_2026
+    python -m src.viz.informe_genero_edad_pdf --fecha 2026-10-15
+
 ## Ensayo del 15/10
 
 El TSE ya publica los archivos de la elección 6258 en cero (generados el

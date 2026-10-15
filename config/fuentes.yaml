@@ -48,8 +48,14 @@ tse:
         ruta: "eleitorado_locais_votacao/eleitorado_local_votacao_{ano}.zip"
         carpeta: "locales_votacion"
       padron:
+        # Electores por município × zona × género × edad × escolaridad.
         ruta: "perfil_eleitorado/perfil_eleitorado_{ano}.zip"
         carpeta: "padron"
+      comparecencia_perfil:
+        # Comparecencia y abstención por turno, município × zona × género ×
+        # edad × escolaridad (dato oficial: el voto es secreto, la asistencia no).
+        ruta: "perfil_comparecimento_abstencao/perfil_comparecimento_abstencao_{ano}.zip"
+        carpeta: "comparecencia_perfil"
       encuestas_registradas:
         # Ficha técnica de cada encuesta registrada (PesqEle). NO trae resultados.
         ruta: "pesquisa_eleitoral/pesquisa_eleitoral_{ano}.zip"

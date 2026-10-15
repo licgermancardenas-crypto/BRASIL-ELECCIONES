@@ -35,6 +35,7 @@ data/processed/electoral/balotaje_2026/
 reports/briefs/_build_balotaje/
 reports/briefs/_build_municipios/
 reports/briefs/_build_hallazgos/
+reports/briefs/_build_genero_edad/
 reports/figures/redes/_build_carrusel_hallazgos/
 data/processed/electoral/movilizacion_2026/
 reports/figures/redes/_build_carrusel_balotaje/

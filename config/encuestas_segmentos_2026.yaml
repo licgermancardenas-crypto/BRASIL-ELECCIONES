@@ -1,0 +1,69 @@
+# config/encuestas_segmentos_2026.yaml
+# Intención de voto de 2ª vuelta por sexo y edad, tal como la publicaron las
+# encuestadoras o la prensa (votos totales, en %, salvo que diga "validos").
+# Se cargan a mano desde las fuentes citadas (15/10/2026); un null es un dato que la
+# fuente no publicó. Se usan como CONTROL, igual que las encuestas generales
+# (decisión del 2026-10-07): el pronóstico no las usa.
+#
+# Grupos: mujeres, hombres, e_16_24, e_25_34, e_35_44, e_45_59, e_60, y
+# agrupaciones propias de cada casa (e_16_34, e_25_40, e_41_59).
+
+referencia_2022:
+  # Datafolha, víspera del balotaje de 2022 (28-29/10/2022, n = 8.308, BR-08297/2022).
+  # Votos VÁLIDOS. Resultado real: Lula 50,9 %.
+  casa: Datafolha
+  fecha_fin: 2022-10-29
+  muestra: 8308
+  base: validos
+  fuente: "https://static.poder360.com.br/2022/12/datafolha-BR-082972022-1.pdf"
+  lula:    {total: 52, mujeres: 55, hombres: 50, e_16_24: 57, e_25_34: 51, e_35_44: 50, e_45_59: 53, e_60: 52}
+  rival:   {total: 48, mujeres: 45, hombres: 50, e_16_24: 43, e_25_34: 49, e_35_44: 50, e_45_59: 47, e_60: 48}
+
+encuestas_2026:
+  - casa: Indexa/Broadcast
+    fecha_fin: 2026-10-14
+    muestra: 2000
+    modo: telefónica
+    registro: BR-04629/2026
+    fuente: "https://www.bnewssaopaulo.com.br/noticias/politica/pesquisa-indexabroadcast-mostra-flavio-com-44-e-lula-com-42-no-2-turno.html"
+    lula:   {total: 42, mujeres: 46.6, hombres: 37.1, e_16_24: 53.5, e_25_34: 41.7, e_35_44: 42.3, e_45_59: 42.5, e_60: 39.8}
+    flavio: {total: 44, mujeres: 40.2, hombres: 47.3, e_16_24: 31.0, e_25_34: 42.5, e_35_44: 44.3, e_45_59: 45.5, e_60: 43.4}
+
+  - casa: Palver
+    fecha_fin: 2026-10-13
+    muestra: 5000
+    modo: online
+    registro: BR-09028/2026   # otra nota cita BR-08028/2026
+    fuente: "https://dcmais.com.br/eleicoes-2026/palver-sem-indecisos-flavio-bolsonaro-tem-50-e-lula-49-no-2-turno/"
+    lula:   {total: 49, mujeres: 58, hombres: 39, e_16_34: 50, e_60: 46}
+    flavio: {total: 50, mujeres: 41, hombres: 60, e_16_34: 49, e_60: 53}
+
+  - casa: Nexus/BTG
+    fecha_fin: 2026-10-12
+    muestra: 2002
+    modo: telefónica
+    registro: BR-07997/2026
+    fuente: "https://unitv.com.br/eleicoes-2024/flavio-bolsonaro-tem-48-e-lula-registra-45-em-cenario-de-segundo-turno-aponta-pesquisa/"
+    # Por edad la nota da solo el puntero de cada franja: Lula 57 (16-24) y 49 (60+),
+    # Flávio 52 (25-40) y 50 (41-59).
+    lula:   {total: 45, mujeres: 54, hombres: 36, e_16_24: 57, e_25_40: null, e_41_59: null, e_60: 49}
+    flavio: {total: 48, mujeres: 39, hombres: 57, e_16_24: null, e_25_40: 52, e_41_59: 50, e_60: null}
+
+  - casa: AtlasIntel/Bloomberg
+    fecha_fin: 2026-10-08
+    muestra: 5026
+    modo: online (RDR)
+    registro: BR-03663/2026
+    fuente: "https://exame.com/brasil/pesquisa-atlasintel-2o-turno-flavio-bolsonaro-abre-54-pontos-de-vantagem-sobre-lula/"
+    lula:   {total: 45.7, mujeres: 53.6, hombres: null}
+    flavio: {total: 51.1, mujeres: null, hombres: 57.7}
+
+  - casa: Datafolha
+    fecha_fin: 2026-10-07
+    muestra: 2520
+    modo: presencial
+    registro: BR-02949/2026
+    fuente: "https://tvtnews.com.br/pesquisa-datafolha-presidente-segundo-turno-15-10/"
+    # La nota: Flávio adelante en todas las franjas salvo 60+.
+    lula:   {total: 45, mujeres: 50, hombres: null, e_60: 50}
+    flavio: {total: 49, mujeres: null, hombres: 53, e_60: 46}
