@@ -1,0 +1,13 @@
+Sexo y edad en el balotaje de Brasil.
+
+Las encuestas coinciden: Lula gana entre las mujeres (56,8% de los válidos) y Flávio Bolsonaro entre los hombres (59,3%).
+
++16,1 pts: la brecha de género en promedio (entre 9,7 y 19,4 según la encuesta). En 2022 era de +5.
+63%: Lula entre los de 16 a 24 años. En las demás edades la elección está pareja.
+23,7%: los mayores de 60 en el padrón (en 2022, 21,1%). Su participación subió de 65,5% a 70,5%.
+
+Las mujeres son el 52,8% del padrón y votan más que los hombres (80,1% contra 78,1% el 4/10).
+
+El voto es secreto: no hay datos oficiales de cómo vota cada grupo. Las preferencias son de Indexa, Palver y Nexus; padrón y participación, del TSE.
+
+#AtlasAnalytics #Brasil2026 #EleiçõesBrasil #Elecciones #DataViz

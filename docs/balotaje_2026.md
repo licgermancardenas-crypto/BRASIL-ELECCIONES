@@ -300,6 +300,7 @@ Preferencias: cortes de encuestas cargados a mano en
 
     python -m src.models.genero_edad_balotaje_2026
     python -m src.viz.informe_genero_edad_pdf --fecha 2026-10-15
+    python -m src.viz.redes_genero_edad --fecha 2026-10-15   # post de Instagram + .txt
 
 ## Ensayo del 15/10
 
