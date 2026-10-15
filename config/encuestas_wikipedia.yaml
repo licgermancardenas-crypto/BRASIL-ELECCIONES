@@ -62,8 +62,12 @@ anos:
   2026:
     eleccion: {1: 2026-10-04, 2: 2026-10-25}
     tablas:
+      # Índices de la revisión del 2026-10-15 (la del 1/10 tenía el cruce
+      # "antes" en el 9; después del 4/10 la página sumó el agregador de 2ª
+      # vuelta en el 8 y la tabla Lula vs Flávio posterior a la 1ª en el 9).
       - {vuelta: 1, indice: 2}   # First round, Aug–Oct (campaign period)
-      - {vuelta: 2, indice: 9, antes_primera_vuelta: true}   # Second round, Aug–Oct (campaign); varios cruces por encuesta
+      - {vuelta: 2, indice: 9}   # Second round, after 4 October 2026 (Lula vs Flávio)
+      - {vuelta: 2, indice: 10, antes_primera_vuelta: true}   # Second round, Aug–Oct (campaign); varios cruces por encuesta
     candidatos:
       "Lula PT": {id: lula, partido: PT}
       "F. Bolsonaro PL": {id: flavio_bolsonaro, partido: PL}

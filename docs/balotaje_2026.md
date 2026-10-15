@@ -189,3 +189,78 @@ personas. Salida en `data/processed/electoral/perfil_reserva_2026/<fecha_utc>/`.
   (P 12 %). Piso de incertidumbre 1 / 2 pts → P(Lula) 1 % / 6 %.
 - Conclusión: el método casi no mueve el número; lo que pesa es qué pasa con la
   participación entre vueltas. Página "¿Cuánto aguanta el número?" en el brief.
+
+## Control externo: encuestas de 2ª vuelta (`src/models/encuestas_balotaje_2026.py`)
+
+Actualización del 2026-10-15. Las encuestas NO entran al pronóstico (decisión
+del 2026-10-07): se contrastan aparte. Fuente: Wikipedia, revisión del 15/10
+(`config/encuestas_wikipedia.yaml`, tabla 9 = Lula vs Flávio después del 4/10).
+Salida en `data/processed/electoral/encuestas_balotaje_2026/<fecha_utc>/`.
+
+- 10 encuestas de 9 casas (5 al 13/10); 9 con Flávio adelante. Promedio con
+  efectos de casa, calidad 2018/2022 y vida media de 3 días: Lula 47,9 %
+  (promedio simple 48,0). Sin tendencia: −0,03 pts/día (t −0,14).
+- Track record por horizonte (solo encuestas posteriores a la 1ª vuelta): a 10
+  días, el promedio subestimó a Haddad 4,8 pts en 2018 (giro tardío: +3,1 en
+  los últimos 10 días) y sobreestimó a Lula 1,4 en 2022. Signo distinto: no se
+  corrige la media (la regla de corrección exige el mismo sesgo en todas las
+  elecciones); el error entra como desvío (3,4 pts con piso de 1,5).
+- Contraste: encuestas 47,9 ± 3,4 vs modelo 47,3 ± 1,5 → z 0,16 (p 0,87).
+  Síntesis por precisión (modelo pesa 83 %): 47,4 %, P(Lula) 3 %. Encuestas
+  solas: P(Lula) 22 %; con el error de 2018 52,7 %, con el de 2022 46,6 %.
+- Proporción uniforme de terceros a Lula que reproduce las encuestas: 53 %
+  (el modelo da 43 %).
+
+## Transferencias declaradas (`src/models/transferencias_balotaje_2026.py`)
+
+BTG/Nexus 10–12/10 (n 2.002, telefónica): 2ª vuelta por voto de la 1ª. El
+pronóstico se descompone en bloques de votos válidos por grupo (lineal en cada
+proporción) y se recombina. Bayes Beta-binomial por subgrupo: a priori = modelo
+R con 20 casos de peso; datos = subgrupo con n estimado (padrón × 2.002 /
+efecto de diseño 1,5; abstencionistas con declaración del 50 %).
+
+| Paso | Lula |
+|---|---|
+| Modelo R | 47,35 |
+| + terceros como Nexus (Caiado 33 % a Lula, Cury 49, Renan 45, Zema 0) | 47,31 |
+| + abstencionistas como Nexus (46 % a Lula vs 26 % en 2022) | 47,54 |
+| + retención igual 98/98 (2022: Lula 97,3 %, Bolsonaro 99,9 %) | 48,13 |
+
+Con shock nacional: 48,1 %, P(Lula) 8 %. La retención sola vale +0,59 pts,
+más que todos los terceros. Brecha: 6,36 M de válidos (3,18 M de conversión).
+Con 43 % de terceros, Lula necesita ~6,1 M de votos netos extra (reserva neta
+2,6 M, bruta 5,7 M). Grilla de caminos en `grilla.csv`.
+
+## Dónde se decide (`src/models/territorio_balotaje_2026.py`)
+
+Pronóstico municipal R + reserva de movilización + cambio 1ª vuelta 2022→2026.
+
+- Votos en juego (terceros + reservas): 18,0 M. SP 25 %; SP+MG+BA+RJ+PR 54 %.
+  SP da a Flávio 4,4 M de margen (70 % del nacional).
+- Lula perdió 1,8 M de votos de 1ª vuelta en el Sudeste y 1,0 M en el Sur
+  desde 2022; el bolsonarismo creció 1,6 M en el Nordeste.
+- Municípios de 100–500 mil electores (192): Lula 41,8 %, Flávio +4,8 M (76 %
+  del margen). Menos de 20 mil: Lula 52,5 %. Capitales 47,6 % (≈ nacional).
+- Termómetro: MG, desvío medio 1,8 pts del nacional en 2018, 2022 y 1ª 2026
+  (−1,7 en la 1ª de 2026). Siguen AM, AP, TO. PA en 49,9 %.
+- 84 municípios de más de 50 mil electores entre 45 y 55 % (31,8 M de
+  electores); São Paulo capital 50,3 %.
+- Participación (nuevos votantes como su município en 2022): +5 pts en el
+  Nordeste → +0,4; en los municípios de Lula 2022 → +0,5; Sur y CO → −0,1.
+
+Brief del 15/10: `reports/briefs/ATLAS_Brasil_Brief_Balotaje_2026-10-15.pdf`
+(21 páginas; nuevas: encuestas, lo que dicen los votantes, dónde se decide ×2,
+caminos al 50 %).
+
+## Ensayo del 15/10
+
+El TSE ya publica los archivos de la elección 6258 en cero (generados el
+13/10): la lectura en vivo del tablero corre de punta a punta contra el
+endpoint real de la noche.
+Resultado (15/10, 08:01): lectura completa en 6 min 36 s (5.570 municípios, 6
+hilos), 0,0 % contado, proyección = pronóstico (47,35 ± 2,49, P 4 %), HTML
+regenerado. Consecuencia para la noche: cada vuelta del loop tarda ~6–7 min
+mientras haya municípios incompletos (lo completo no se vuelve a pedir), así
+que `--loop 180` en la práctica actualiza cada ~10 min al principio. Lanzarlo
+a las 16:45 de Brasília para tener la primera foto cuando arranca la
+divulgación.
