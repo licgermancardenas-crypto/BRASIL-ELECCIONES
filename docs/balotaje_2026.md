@@ -295,6 +295,11 @@ Preferencias: cortes de encuestas cargados a mano en
   El % de mujeres casi no varía entre municípios (desvío 1,9 pts) y la edad va
   con región e ingreso. Se informa como resultado negativo; no se usa.
 - Boa Esperança do Norte (MT): código TSE 73709 (del padrón 2026).
+- Por estado (`por_uf.csv`): solo datos oficiales (padrón y participación por sexo y edad,
+  Lula del 4/10). Mujeres votan más en 26 de 27 UF; la diferencia va de −0,1 (RS) a +6,2
+  (RR), mayor en Norte y Nordeste. No hay encuestas por estado con cortes de sexo y edad.
+- El informe de hallazgos suma las páginas 7 (sexo y edad) y 8 (por estado): correr
+  antes el modelo de sexo y edad.
 - La 1ª corrida lee ~1 GB de zips y guarda un agregado `.parquet` junto a cada
   zip (en `data/raw/`, ignorado); las siguientes tardan segundos.
 

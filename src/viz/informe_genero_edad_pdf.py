@@ -135,6 +135,52 @@ def fig_edad(R):
     guardar(f, "edad.svg")
 
 
+def pagina_estados(D, R, pie):
+    """Página de sexo y edad por estado (solo datos oficiales del TSE). La usa también
+    src/viz/informe_hallazgos_pdf.py."""
+    from src.viz.anexo_municipios_pdf import UF_NOMBRE
+    U = pd.DataFrame(R["por_uf"]).T
+    U["d60"] = (U["e60_padron"] - U["e60_padron_2022"]) * 100
+    filas = [[f"{UF_NOMBRE[k]}", f1(r.electores_2026 / 1e6), pc(r.mujeres_padron), pc(r.e16_24_padron),
+              f"{pc(r.e60_padron)} <span class='d'>{sg(r.d60)}</span>", pc(r.part_mujeres), pc(r.part_hombres),
+              f"<b>{sg(r.brecha_part_pp)}</b>", pc(r.lula_4_10)] for k, r in U.iterrows()]
+    b = U["brecha_part_pp"].sort_values(ascending=False)
+    top = ", ".join(f"{UF_NOMBRE[k]} ({sg(v)})" for k, v in b.head(4).items())
+    viejos = U["e60_padron"].sort_values(ascending=False)
+    jov = U["e16_24_padron"].sort_values(ascending=False)
+    p16 = U["part_16_24"].sort_values()
+    def nombres(serie, n):
+        x = [f"{UF_NOMBRE[k]} ({pc(v)})" for k, v in serie.head(n).items()]
+        return ", ".join(x[:-1]) + " y " + x[-1]
+    cuerpo = ('<div class="dos-col dos-col-60"><div class="t-uf">'
+              + tabla(["Estado", "Electores (M)", "Mujeres", "16 a 24", "60 o más (vs 2022)", "Votaron mujeres",
+                       "Votaron hombres", "Diferencia", "Lula 4/10"], filas, num=(1, 2, 3, 4, 5, 6, 7, 8))
+              + fuente("TSE: perfil del electorado 2022 y 2026 (% del padrón) y comparecencia por perfil de la 1ª vuelta "
+                       "(votaron / aptos). Diferencia: participación de mujeres menos la de hombres, en pts. Lula: % de "
+                       "Lula + Flávio el 4/10. Ordenado por electores.")
+              + "</div><div>"
+              + insight(f"<b>Las mujeres votan más en {int((b > 0).sum())} de los 27 estados.</b> La diferencia es mayor en el "
+                        f"Norte y el Nordeste: {top}. En São Paulo es de {sg(U.loc['SP', 'brecha_part_pp'])} pts y en Rio "
+                        f"Grande do Sul, {sg(U.loc['RS', 'brecha_part_pp'])}.")
+              + insight(f"<b>Todos los estados envejecieron.</b> Los mayores de 60 ganaron entre {f1(U['d60'].min())} y "
+                        f"{f1(U['d60'].max())} pts del padrón desde 2022. Los electorados más viejos están en el Sur y el "
+                        f"Sudeste: {nombres(viejos, 3)}.")
+              + insight(f"<b>Los jóvenes pesan más en el Norte.</b> Los de 16 a 24 son casi uno de cada cinco electores en "
+                        f"{nombres(jov, 3)}, contra {pc(U.loc['RS', 'e16_24_padron'])} en Rio Grande do Sul. Donde menos "
+                        f"votaron el 4/10 fue en {nombres(p16, 3)}.")
+              + insight("<b>Qué no dice este cuadro:</b> no hay encuestas por estado con cortes de sexo y edad, y los "
+                        "resultados por município no alcanzan para estimarlo (ver la sección de resultados). Muestra quién "
+                        "vota en cada estado, no a quién.")
+              + "</div></div>")
+    return dict(cuerpo=cuerpo, kicker="POR ESTADO", titulo="Quién vota en cada estado: más mujeres en las urnas del Norte y el Nordeste",
+                bajada="Padrón y participación del 4 de octubre por sexo y edad en los 27 estados. Datos oficiales del TSE.", pie=pie)
+
+
+CSS_UF = """
+.t-uf table { font-size:8pt; } .t-uf th { font-size:7pt; } .t-uf td { padding:.05cm .14cm; }
+.t-uf .d { color:#8A8983; font-size:7pt; }
+"""
+
 CSS_EXTRA = """
 .kpis { margin-bottom:.7cm; } .kpis .kpi-v { font-size:21pt; }
 .kpi-l { font-size:9pt; } .kpi-n { font-size:8pt; }
@@ -303,6 +349,9 @@ def construir(fecha: date) -> Path:
              bajada="Se probó estimar el voto de cada grupo con los resultados de los 5.571 municípios. No pasó la prueba contra 2022.",
              pie=pie)
 
+    pe_ = pagina_estados(None, R, pie)
+    D.pagina(pe_["cuerpo"], kicker="4 · " + pe_["kicker"], titulo=pe_["titulo"], bajada=pe_["bajada"], pie=pie)
+
     cuerpo = ('<div class="dos-col"><div class="nota-metodo">'
               '<h3>Qué se puede saber y qué no</h3>'
               '<p><b>El voto es secreto.</b> El TSE publica cuántos votos tuvo cada candidato en cada sección y, aparte, '
@@ -331,7 +380,7 @@ def construir(fecha: date) -> Path:
              pie=f"Atlas Analytics · {fecha_txt} · documento de circulación restringida.")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Sexo y edad</title>'
-            f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}</style></head><body>{"".join(D.paginas)}</body></html>')
+            f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}{CSS_UF}</style></head><body>{"".join(D.paginas)}</body></html>')
     (BUILD / "informe.html").write_text(html, encoding="utf-8")
     chrome = next((c for c in CHROME if Path(c).exists()), None)
     pdf = BRIEFS / f"ATLAS_Brasil_Genero_Edad_{fecha:%Y-%m-%d}.pdf"

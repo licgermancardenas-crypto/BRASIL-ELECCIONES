@@ -22,7 +22,7 @@ Escenarios: cuánto movería el resultado que la participación por sexo y edad
 cambie entre vueltas como en 2022, con las preferencias de las encuestas.
 
 Salida: data/processed/electoral/genero_edad_balotaje_2026/<fecha_utc>/
-    resumen.json, padron.csv, comparecencia.csv, encuestas.csv, municipios.parquet
+    resumen.json, padron.csv, comparecencia.csv, encuestas.csv, municipios.parquet, por_uf.csv
 
 Uso:
     python -m src.models.genero_edad_balotaje_2026
@@ -264,6 +264,36 @@ def ecologico(res: pd.DataFrame, mez22: pd.DataFrame, mez26: pd.DataFrame) -> di
 
 
 # ---------------------------------------------------------------------------
+# 4b · Por estado (solo datos oficiales)
+# ---------------------------------------------------------------------------
+
+def por_uf(p22: pd.DataFrame, p26: pd.DataFrame, c26: pd.DataFrame, res: pd.DataFrame) -> pd.DataFrame:
+    """Padrón, participación del 4/10 y voto de Lula por UF. No estima voto por grupo:
+    con encuestas solo nacionales, eso por estado no se puede saber."""
+    def cuota(d, q, col, val):
+        return d[d[col] == val].groupby("SG_UF")[q].sum() / d.groupby("SG_UF")[q].sum()
+    c = c26[c26["turno"] == 1]
+    tasa = lambda col, val: (c[c[col] == val].groupby("SG_UF")["comparecencia"].sum()
+                             / c[c[col] == val].groupby("SG_UF")["aptos"].sum())
+    dos = res.groupby("uf")["dos_2026"].sum()
+    out = pd.DataFrame({
+        "electores_2026": p26.groupby("SG_UF")["QT_ELEITORES"].sum(),
+        "mujeres_padron": cuota(p26, "QT_ELEITORES", "genero", "mujeres"),
+        "e16_24_padron": cuota(p26, "QT_ELEITORES", "edad", "16-24"),
+        "e60_padron_2022": cuota(p22, "QT_ELEITORES", "edad", "60+"),
+        "e60_padron": cuota(p26, "QT_ELEITORES", "edad", "60+"),
+        "part_mujeres": tasa("genero", "mujeres"),
+        "part_hombres": tasa("genero", "hombres"),
+        "part_16_24": tasa("edad", "16-24"),
+        "part_60": tasa("edad", "60+"),
+        "mujeres_votantes": cuota(c, "comparecencia", "genero", "mujeres"),
+        "lula_4_10": (res["lula_2026"] * res["dos_2026"]).groupby(res["uf"]).sum() / dos,
+    })
+    out["brecha_part_pp"] = (out["part_mujeres"] - out["part_hombres"]) * 100
+    return out.sort_values("electores_2026", ascending=False)
+
+
+# ---------------------------------------------------------------------------
 # 5 · Escenarios de participación
 # ---------------------------------------------------------------------------
 
@@ -327,6 +357,8 @@ def main() -> None:
     mez22, mez26 = mezcla_votantes(c22, 2), mezcla_votantes(c26, 1)
     eco = ecologico(res, mez22, mez26)
     pd.concat([res, mez26.add_prefix("v26_")], axis=1).to_parquet(salida / "municipios.parquet")
+    uf = por_uf(p22, p26, c26, res)
+    uf.to_csv(salida / "por_uf.csv")
 
     esc = escenarios(t22, t26, apoyo, {"mujeres": comp["2026"]["mujeres"] * comp["2026"]["total"]})
 
@@ -341,6 +373,7 @@ def main() -> None:
         "referencia_2022": ref,
         "ecologico": eco,
         "escenarios": esc,
+        "por_uf": uf.to_dict(orient="index"),
         "nota": "Voto secreto: sexo y edad salen de encuestas (control) y de inferencia ecológica (territorios, no personas).",
     }
     (salida / "resumen.json").write_text(json.dumps(resumen, ensure_ascii=False, indent=2, default=lambda o: o.isoformat() if hasattr(o, "isoformat") else float(o)), encoding="utf-8")

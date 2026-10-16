@@ -3,7 +3,9 @@ src/viz/informe_hallazgos_pdf.py
 
 Informe formal de hallazgos del balotaje (25/10/2026) con la identidad de Atlas
 Analytics: síntesis de todo el análisis (pronóstico, encuestas como control,
-transferencias declaradas, territorio y municípios) en un documento corto.
+transferencias declaradas, territorio, municípios, y sexo y edad nacional y por
+estado) en un documento corto. Sexo y edad: última corrida de
+src/models/genero_edad_balotaje_2026.py.
 
 Reusa las figuras del brief (correr antes src/viz/brief_balotaje_pdf.py con la
 misma fecha) y las cifras de src/viz/redes_hallazgos_balotaje.cargar().
@@ -16,6 +18,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import shutil
 import subprocess
@@ -28,6 +31,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import src.viz.carrusel_linkedin as cl
+import src.viz.informe_genero_edad_pdf as ige
+from src.models.genero_edad_balotaje_2026 import SALIDA_DIR as GENERO_EDAD_DIR
 from src.models.montecarlo.proyeccion_bancas import ROOT
 from src.viz.anexo_municipios_pdf import UF_NOMBRE
 from src.viz.brief_balotaje_pdf import BUILD as BUILD_BRIEF, nombre_mun
@@ -71,6 +76,7 @@ table { font-size:9pt; } th { font-size:7.6pt; } td { padding:.13cm .2cm; white-
 h3.sub { font-size:10.5pt; margin:0 0 .2cm; }
 .fig-enc { max-height:7.4cm; } .fig-hz { max-height:5cm; } .fig-casc { max-height:10.5cm; }
 .fig-tam { max-height:6.2cm; } .fig-ter { max-height:13cm; } .fig-cam { max-height:11cm; } .fig-cuf { max-height:7.6cm; }
+.fig-ge { max-height:6cm; }
 .mapa-c { width:100%; max-height:12.6cm; object-fit:contain; }
 .ley-c { display:flex; gap:.45cm; font-size:8pt; color:#6B6480; margin-top:.1cm; }
 .ley-c i { display:inline-block; width:.3cm; height:.3cm; margin-right:.12cm; vertical-align:-1px; }
@@ -93,6 +99,11 @@ def construir(fecha: date) -> Path:
     cl.BUILD = BUILD / "figs"
     mapa_cambios(D, "mapa_cambios.png", 1400)
     fig_cambios_uf(D)
+    G = json.loads((sorted(p.parent for p in GENERO_EDAD_DIR.glob("*/resumen.json"))[-1] / "resumen.json")
+                   .read_text(encoding="utf-8"))
+    ige.BUILD = BUILD
+    ige.fig_genero(G)
+    ige.fig_edad(G)
 
     Doc = Documento("Atlas Analytics · Brasil 2026")
     fecha_txt = f"{fecha.day} de octubre de {fecha.year}"
@@ -103,13 +114,14 @@ def construir(fecha: date) -> Path:
   <div class="p-izq">
     <div class="p-marca">ATLAS ANALYTICS</div>
     <h1>Brasil 2026: dónde se decide el balotaje</h1>
-    <div class="p-sub">Informe de hallazgos. Qué dicen juntos el pronóstico, las encuestas, lo que declaran los votantes
-      y el mapa de los 5.571 municípios, a diez días del 25 de octubre.</div>
+    <div class="p-sub">Informe de hallazgos. Qué dicen juntos el pronóstico, las encuestas, lo que declaran los votantes,
+      el mapa de los 5.571 municípios y quién vota por sexo y edad, a diez días del 25 de octubre.</div>
     <div class="p-linea"></div>
     <div class="p-meta">
       <div><span>Pronóstico</span> resultados oficiales del TSE, 2018, 2022 y 1ª vuelta 2026 · {f0(R['montecarlo']['n'])} simulaciones</div>
       <div><span>Control</span> {E['encuestas_post_1v']} encuestas de 2ª vuelta posteriores al 4/10, contrastadas aparte</div>
       <div><span>Votantes</span> transferencias declaradas, BTG Pactual/Nexus, 10–12/10</div>
+      <div><span>Sexo y edad</span> padrón y participación del TSE; cortes de 5 encuestas, 7–14/10</div>
       <div><span>Corte</span> {fecha:%d/%m/%Y}</div>
     </div>
     <div class="p-conf">Documento de circulación restringida</div>
@@ -285,6 +297,43 @@ def construir(fecha: date) -> Path:
     Doc.pagina(cuerpo, kicker="6 · CAMINOS AL 50 %", titulo="Para ganar, Lula necesita a la vez terceros y movilización",
                bajada="Qué combinaciones de transferencias y participación alcanzan para el empate.", pie=pie)
 
+    # ================================================================ 7 · sexo y edad
+    GB, GP, g26, g22, gv = G["encuestas"], G["participacion"], G["padron"]["2026"], G["padron"]["2022"], G["votantes_1v_2026"]
+    GS, GE = G["escenarios"], G["ecologico"]
+    pc = lambda x: f1(x * 100) + " %"
+    jov = GB["por_casa"]["Indexa/Broadcast"]["e_16_24"]
+    cuerpo = ('<div class="dos-col"><div>'
+              + '<h3 class="sub">Lula entre mujeres y hombres, % de válidos</h3>' + fig("genero.svg", "fig fig-ge")
+              + '<h3 class="sub">Lula por edad, % de válidos</h3>' + fig("edad.svg", "fig fig-ge")
+              + fuente("Encuestas de 2ª vuelta con cortes publicados (Indexa, Palver, Nexus, AtlasIntel, Datafolha). "
+                       "Datafolha 2022: víspera del balotaje.")
+              + "</div><div>"
+              + insight(f"<b>La brecha de género se triplicó.</b> Lula saca {f1(GB['mujeres_media'])} % entre las mujeres y Flávio "
+                        f"{f1(100 - GB['hombres_media'])} % entre los hombres: {sg(GB['brecha_genero_media_pp'])} pts de diferencia "
+                        f"en promedio (de {f1(GB['brecha_genero_rango_pp'][0])} a {f1(GB['brecha_genero_rango_pp'][1])} según la "
+                        f"encuesta), contra +{GB['brecha_genero_2022_pp']} en 2022.")
+              + insight(f"<b>Las mujeres son mayoría y votan más:</b> {pc(g26['mujeres'])} del padrón y {pc(gv['mujeres'])} de "
+                        f"los que votaron el 4/10 ({pc(GP['2026_1v']['mujeres'])} contra {pc(GP['2026_1v']['hombres'])}). "
+                        f"Aun así, un punto más de participación femenina mueve a Lula apenas "
+                        f"{sg2(GS['mujeres_+1pt_participacion_pp'] * 100)} pts.")
+              + insight(f"<b>Los jóvenes, con Lula; el resto, parejo.</b> Lula tiene {jov:.0f} % entre los de 16 a 24 "
+                        f"(Indexa). Los mayores de 60 ya son el {pc(g26['60+'])} del padrón ({pc(g22['60+'])} en 2022), "
+                        f"votaron más que en 2022 ({pc(GP['2022_1v']['60+'])} → {pc(GP['2026_1v']['60+'])}) y las encuestas "
+                        "no coinciden sobre ellos.")
+              + insight(f"<b>La composición no define el balotaje.</b> Si la participación por sexo y edad cambia entre vueltas "
+                        f"como en 2022, Lula se mueve {sg2(GS['edad']['efecto_pp'] * 100)} pts. El voto por grupo solo se conoce "
+                        f"por encuestas: estimarlo con los resultados por município no pasó la prueba contra 2022 (daba una "
+                        f"brecha de género de {sg(GE['2022_2v']['brecha_genero_pp'])} pts).")
+              + "</div></div>")
+    Doc.pagina(cuerpo, kicker="7 · SEXO Y EDAD", titulo="Lula gana entre las mujeres, Flávio entre los hombres",
+               bajada="El voto es secreto: las preferencias por grupo son de encuestas; padrón y participación, del TSE.",
+               pie="Preferencias por sexo y edad: encuestas (control). Padrón y participación: TSE.")
+
+    # ================================================================ 8 · por estado
+    pe_ = ige.pagina_estados(None, G, "Padrón y participación: TSE. Lula: % de Lula + Flávio en la 1ª vuelta.")
+    Doc.pagina(pe_["cuerpo"], kicker="8 · SEXO Y EDAD " + pe_["kicker"], titulo=pe_["titulo"], bajada=pe_["bajada"],
+               pie=pe_["pie"])
+
     # ================================================================ qué mirar + método
     acciones = [
         ("Que vuelvan a votar los votantes de Lula del 4/10",
@@ -313,9 +362,12 @@ def construir(fecha: date) -> Path:
               '<p><b>Votantes.</b> Transferencias declaradas en BTG/Nexus combinadas con el modelo por subgrupo (beta-binomial).</p>'
               '<p><b>Territorio.</b> Votos en juego, tamaño de ciudad, estados termómetro, municípios bisagra y cambios de ganador '
               'en los 5.571 municípios.</p>'
+              '<p><b>Sexo y edad.</b> Padrón y participación oficiales por sexo y edad; preferencias por grupo de los cortes '
+              'publicados por las encuestadoras, solo como control.</p>'
               '<h3>Fuentes</h3>'
-              '<p>TSE (resultados 2018, 2022 y 2026). Wikipedia, encuestas de 2ª vuelta. BTG Pactual/Nexus (13/10). Poder360/Quaest. '
-              'IBGE (códigos y nombres de municípios).</p>'
+              '<p>TSE (resultados 2018, 2022 y 2026; perfil del electorado y comparecencia por perfil). Wikipedia, encuestas de '
+              '2ª vuelta. BTG Pactual/Nexus (13/10). Poder360/Quaest. Indexa, Palver, AtlasIntel y Datafolha (cortes por sexo y '
+              'edad). IBGE (códigos y nombres de municípios).</p>'
               '<h3>Alcance</h3>'
               '<p>Inferencia ecológica: describe territorios, no personas. Los rangos combinan el error del método, la diferencia '
               'entre métodos y un margen por lo que la prueba no ve.</p></div></div>')
@@ -323,7 +375,7 @@ def construir(fecha: date) -> Path:
                pie=f"Atlas Analytics · {fecha_txt} · documento de circulación restringida.")
 
     html = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Atlas Analytics · Hallazgos del balotaje</title>'
-            f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}</style></head><body>{"".join(Doc.paginas)}</body></html>')
+            f'<style>{CSS_MARCA.read_text(encoding="utf-8")}{CSS_EXTRA}{ige.CSS_UF}</style></head><body>{"".join(Doc.paginas)}</body></html>')
     (BUILD / "informe.html").write_text(html, encoding="utf-8")
     chrome = next((c for c in CHROME if Path(c).exists()), None)
     if chrome is None:
